@@ -8,13 +8,20 @@
 
 using namespace std;
 
-const int MAX_CHAIN_SIZE = 6;
+/*
+_____|_C_|_M_|
+Easy | 4 | 4 |
+Med  | 8 | 2 |
+Hard | 16| 0 |
+*/
+
+const int MAX_CHAIN_SIZE = 8;
 const int MAX_MIRROR_SIZE = 2;
 
-void listVector(vector<string> list) {
-    for (int i = 0; i < list.size(); i++) {
-        cout << list[i];
-        if (i < list.size() - 1) {
+void showLinks(vector<string> links) {
+    for (int i = 0; i < links.size(); i++) {
+        cout << links[i];
+        if (i < links.size() - 1) {
             cout << ", ";
         }
         if (i % 5 == 4) {
@@ -60,20 +67,9 @@ bool wordCheck(string& word, string& check, int& change) {
 }
 
 bool wordCheck(string& word, string& check) {
-    int match = 0;
-
-    for (int i = 0; i < 5; i++) {
-        if (word[i] == check[i]) {
-            match++;
-        }
-    }
-
-    if (match == 4) {
-        //cout << "\t\t\tConnection found!\n";
-        return true;
-    }
-    else { return false; }
-
+    static int dumby;
+    dumby = 0;
+    return wordCheck(word, check, dumby);
 }
 
 bool repeatWord(string word, vector<string>& chain) {
@@ -105,7 +101,7 @@ bool mirrorCheck(vector<string>& wordset) {
 string findChain(vector<string>& wordlist, string& startword,  const int LISTLEN, int &chainlen) {
     bool found_endword = false;
     string checkword, nextword;
-    vector<string> chain, link;
+    vector<string> chain, links;
     int lastchange = -1, change = 0, timeout = 0;
 
     
@@ -117,25 +113,26 @@ string findChain(vector<string>& wordlist, string& startword,  const int LISTLEN
     while (!found_endword) {
         checkword = chain.back();
         cout << "\t\tChecking " << checkword << ", Chain length = " << chain.size() << endl;
-        link.clear();
+        links.clear();
 
         for (int j = 0; j < LISTLEN; j++) {
             //cout << "\t\t\tChecking " << checkword << " - "  << wordlist[j]  << ", " << j << " / " << LISTLEN << endl;
-            if (wordCheck(checkword, wordlist[j])) {
-                if (!repeatWord(wordlist[j], chain)) {
-                    link.push_back(wordlist[j]);
-                }
-            } 
+            if (!wordCheck(checkword, wordlist[j])) {
+                continue;
+            }
+            if (!repeatWord(wordlist[j], chain)) {
+                links.push_back(wordlist[j]);
+            }
         }
 
-        cout << "\t\t\t\tLink length: " << link.size() << endl;
-        if (link.size() > 0 && chain.size() < MAX_CHAIN_SIZE) {
-            cout << "\t\t\t\tWords in link: ";
-            listVector(link);
+        cout << "\t\t\t\tLink length: " << links.size() << endl;
+        if (links.size() > 0 && chain.size() < MAX_CHAIN_SIZE) {
+            cout << "\t\t\t\tWords in links: ";
+            showLinks(links);
             
             timeout = 0;
             do { 
-                nextword = link[RandomInt(link.size())];
+                nextword = links[RandomInt(links.size())];
                 wordCheck(checkword, nextword, change);
                 timeout++;
             } while (change == lastchange && timeout < 11);
