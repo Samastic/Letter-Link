@@ -19,4 +19,4 @@ For example, if the starting wordset is (lured, roped), then the chain would loo
 
 
 
-This game is based off the "word chains" concept as seen in CodeParad's [Exploring Word Chains](https://www.youtube.com/watch?v=6GuqNrV8LsQ).
+This game is based off the "word chains" concept as seen in CodeParade's [Exploring Word Chains](https://www.youtube.com/watch?v=6GuqNrV8LsQ).
