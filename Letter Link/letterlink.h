@@ -37,6 +37,8 @@ public:
     vector<string> autochain;
 
     bool evalChain(vector<string>& guess);
+
+    void newChain(){ getChain(wordlist, wordset); }
 };
 
 

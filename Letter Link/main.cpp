@@ -14,14 +14,15 @@ public:
     LLFrame();
 
 private:
-    void OnStartGame(wxCommandEvent& event);
+    void OnNewGame(wxCommandEvent& event);
     void OnExit(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
     void OnAddTextBox(wxCommandEvent& event);
     void OnRemoveTextBox(wxCommandEvent& event);
     void OnSubmit(wxCommandEvent& event);
-    void OnShowChain(wxCommandEvent& event);  // New method for handling "Show Chain"
+    void OnShowChain(wxCommandEvent& event);
     void UpdateLayout();
+    void SetInteractable(bool interactable);
 
     vector<wxTextCtrl*> writableTextBoxes;
     int topMargin = 50;
@@ -29,16 +30,19 @@ private:
     int verticalSpacing = 20;
     wxTextCtrl* startword;
     wxTextCtrl* endword;
+    wxButton* minusButton;
+    wxButton* plusButton;
+    wxButton* submitButton;
     LetterLink LLGame;
 };
 
 enum
 {
-    ID_StartGame = 1,
+    ID_NewGame = 1,
     ID_AddTextBox,
     ID_RemoveTextBox,
     ID_Submit,
-    ID_ShowChain  // New ID for "Show Chain" menu item
+    ID_ShowChain
 };
 
 bool LLApp::OnInit()
@@ -52,8 +56,8 @@ LLFrame::LLFrame()
     : wxFrame(nullptr, wxID_ANY, "Letter Link")
 {
     wxMenu* menuOptions = new wxMenu;
-    menuOptions->Append(ID_StartGame, "&Start Game...\tCtrl-S", "Start a new game");
-    menuOptions->Append(ID_ShowChain, "&Show Chain...\tCtrl-C", "Show the auto-generated chain");  // Add "Show Chain" menu item
+    menuOptions->Append(ID_NewGame, "&New Game...\tCtrl-S", "Start a new game");
+    menuOptions->Append(ID_ShowChain, "&Show Chain...\tCtrl-C", "Show the auto-generated chain");
     menuOptions->AppendSeparator();
     menuOptions->Append(wxID_EXIT);
 
@@ -71,31 +75,56 @@ LLFrame::LLFrame()
 
     Bind(wxEVT_MENU, &LLFrame::OnAbout, this, wxID_ABOUT);
     Bind(wxEVT_MENU, &LLFrame::OnExit, this, wxID_EXIT);
-    Bind(wxEVT_MENU, &LLFrame::OnStartGame, this, ID_StartGame);
-    Bind(wxEVT_MENU, &LLFrame::OnShowChain, this, ID_ShowChain);  // Bind "Show Chain" event
-}
+    Bind(wxEVT_MENU, &LLFrame::OnNewGame, this, ID_NewGame);
+    Bind(wxEVT_MENU, &LLFrame::OnShowChain, this, ID_ShowChain);
 
-void LLFrame::OnStartGame(wxCommandEvent& event)
-{
-    vector<string> wordset = LLGame.getWordset();
-
-
-    startword = new wxTextCtrl(this, wxID_ANY, wordset.size() > 0 ? wordset[0] : "", wxPoint(10, topMargin), wxSize(200, boxHeight), wxTE_READONLY);
-
+    // Create all UI elements initially
+    startword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, topMargin), wxSize(200, boxHeight), wxTE_READONLY);
     wxTextCtrl* initialTextBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, topMargin + boxHeight + verticalSpacing), wxSize(200, boxHeight));
     writableTextBoxes.push_back(initialTextBox);
+    endword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, topMargin + 2 * (boxHeight + verticalSpacing)), wxSize(200, boxHeight), wxTE_READONLY);
 
-    endword = new wxTextCtrl(this, wxID_ANY, wordset.size() > 1 ? wordset[1] : "", wxPoint(10, topMargin + 2 * (boxHeight + verticalSpacing)), wxSize(200, boxHeight), wxTE_READONLY);
+    minusButton = new wxButton(this, ID_RemoveTextBox, "-", wxPoint(220, topMargin));
+    plusButton = new wxButton(this, ID_AddTextBox, "+", wxPoint(220, topMargin + (writableTextBoxes.size() + 1) * (boxHeight + verticalSpacing)));
+    submitButton = new wxButton(this, ID_Submit, "Submit", wxPoint(10, topMargin + (writableTextBoxes.size() + 2) * (boxHeight + verticalSpacing)));
 
-    wxButton* minusButton = new wxButton(this, ID_RemoveTextBox, "-", wxPoint(220, topMargin));
-    wxButton* plusButton = new wxButton(this, ID_AddTextBox, "+", wxPoint(220, topMargin + (writableTextBoxes.size() + 1) * (boxHeight + verticalSpacing)));
-    wxButton* submitButton = new wxButton(this, ID_Submit, "Submit", wxPoint(10, topMargin + (writableTextBoxes.size() + 2) * (boxHeight + verticalSpacing)));
-
+    // Bind buttons to event handlers
     Bind(wxEVT_BUTTON, &LLFrame::OnAddTextBox, this, ID_AddTextBox);
     Bind(wxEVT_BUTTON, &LLFrame::OnRemoveTextBox, this, ID_RemoveTextBox);
     Bind(wxEVT_BUTTON, &LLFrame::OnSubmit, this, ID_Submit);
 
+    // Make all controls unclickable initially
+    SetInteractable(false);
+
     UpdateLayout();
+}
+
+void LLFrame::OnNewGame(wxCommandEvent& event)
+{
+    // Generate a new chain and make controls interactable
+    LLGame.newChain();
+    vector<string> wordset = LLGame.getWordset();
+
+    // Set start and end words
+    startword->SetValue(wordset.size() > 0 ? wordset[0] : "");
+    endword->SetValue(wordset.size() > 1 ? wordset[1] : "");
+
+    // Make all controls interactable
+    SetInteractable(true);
+}
+
+void LLFrame::SetInteractable(bool interactable)
+{
+    // Enable or disable all text boxes and buttons
+    startword->Enable(interactable);
+    endword->Enable(interactable);
+    for (wxTextCtrl* textBox : writableTextBoxes)
+    {
+        textBox->Enable(interactable);
+    }
+    minusButton->Enable(interactable);
+    plusButton->Enable(interactable);
+    submitButton->Enable(interactable);
 }
 
 void LLFrame::OnAddTextBox(wxCommandEvent& event)
@@ -118,25 +147,19 @@ void LLFrame::OnRemoveTextBox(wxCommandEvent& event)
 
 void LLFrame::OnSubmit(wxCommandEvent& event)
 {
-    // Clear the guess vector
     LLGame.guess.clear();
 
-    // Add the start word to the guess vector
     LLGame.guess.push_back(startword->GetValue().ToStdString());
 
-    // Add all writable text boxes' values to the guess vector
     for (wxTextCtrl* textBox : writableTextBoxes)
     {
         LLGame.guess.push_back(textBox->GetValue().ToStdString());
     }
 
-    // Add the end word to the guess vector
     LLGame.guess.push_back(endword->GetValue().ToStdString());
 
-    // Call evalChain to evaluate the user's chain
     bool isValidChain = LLGame.evalChain(LLGame.guess);
 
-    // Show a popup window with the result
     if (isValidChain) {
         wxMessageBox("You made a valid chain!", "Chain Validation", wxOK | wxICON_INFORMATION, this);
     }
@@ -145,17 +168,14 @@ void LLFrame::OnSubmit(wxCommandEvent& event)
     }
 }
 
-
 void LLFrame::OnShowChain(wxCommandEvent& event)
 {
-    // Collect the auto-generated chain into a single string
     string chainText;
     for (const string& word : LLGame.autochain)
     {
         chainText += word + "\n";
     }
 
-    // Show the chain in a popup message box
     wxMessageBox(chainText, "Auto-generated Chain", wxOK | wxICON_INFORMATION, this);
 }
 
