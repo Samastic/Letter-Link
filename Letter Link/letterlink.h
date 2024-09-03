@@ -1,6 +1,7 @@
 #ifndef LETTERLINK_H
 #define LETTERLINK_H
 
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -8,14 +9,14 @@
 #include <string>
 #include <cstdlib>
 #include <ctime>
-
+#include <wx/wx.h>
 
 using namespace std;
 
 class LetterLink {
 private:
-    const int MAX_CHAIN_SIZE = 8;
-    const int MAX_MIRROR_SIZE = 2;
+    const int MAX_CHAIN_SIZE = 6;
+    const int MAX_MIRROR_SIZE = 1;
     vector<string> wordlist;
     vector<string> wordset;
 
@@ -31,5 +32,6 @@ private:
 public:
     LetterLink();  // Constructor that initializes the program
 };
+
 
 #endif // LETTERLINK_H

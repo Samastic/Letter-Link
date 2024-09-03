@@ -98,11 +98,11 @@ string LetterLink::findChain(vector<string>& wordlist, string& startword, const 
             }
         }
 
-        cout << "\t\t\t\tLink length: " << links.size() << endl;
-        if (links.size() > 0 && chain.size() < MAX_CHAIN_SIZE) {
-            cout << "\t\t\t\tWords in links: ";
-            showLinks(links);
+        cout << "\t\t\t\tLink length: " << links.size() << endl
+            << "\t\t\t\tWords in links: ";
+        showLinks(links);
 
+        if (links.size() > 0 && chain.size() < MAX_CHAIN_SIZE) {
             timeout = 0;
             do {
                 nextword = links[RandomInt(links.size())];
