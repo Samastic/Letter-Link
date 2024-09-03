@@ -187,19 +187,7 @@ void LetterLink::getChain(vector<string>& wordlist, vector<string>& wordset) {
 }
 
 LetterLink::LetterLink() {
-    ifstream inputFile("connections.txt");
-    if (!inputFile) {
-        cerr << "Error opening file connections.txt" << endl;
-        exit(1);
-    }
-    cout << "File opened.\n";
-
-    string word;
-    while (inputFile >> word) {
-        wordlist.push_back(word);
-    }
-
-    inputFile.close();
+    wordlist = secret::bible;
 
     cout << "Wordlist generated.\n";
 

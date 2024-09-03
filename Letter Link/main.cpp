@@ -1,5 +1,6 @@
 #include "letterlink.h"
 
+
 class LLApp : public wxApp
 {
 public:
