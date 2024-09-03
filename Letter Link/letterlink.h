@@ -19,6 +19,7 @@ private:
     const int MAX_MIRROR_SIZE = 1;
     vector<string> wordlist;
     vector<string> wordset;
+    
 
     void showLinks(vector<string> links);
     int RandomInt(int size);
@@ -31,6 +32,11 @@ private:
 
 public:
     LetterLink();  // Constructor that initializes the program
+    vector<string> getWordset() const { return wordset; }
+    vector<string> guess;
+    vector<string> autochain;
+
+    bool evalChain(vector<string>& guess);
 };
 
 

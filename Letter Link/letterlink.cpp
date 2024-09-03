@@ -1,5 +1,39 @@
 #include "letterlink.h"
 
+bool LetterLink::evalChain(vector<string>& guess) {
+    // Check if the guess vector is empty or has fewer than two words (invalid input)
+    if (guess.size() < 2) {
+        return false;
+    }
+
+    // Check that all middle words (excluding the first and last) are in the wordlist
+    for (size_t i = 1; i < guess.size() - 1; ++i) {
+        if (find(wordlist.begin(), wordlist.end(), guess[i]) == wordlist.end()) {
+            // If any middle word is not found in wordlist, return false
+            return false;
+        }
+    }
+
+    // Check that each word in the guess differs by exactly one letter from the previous word
+    for (size_t i = 1; i < guess.size(); ++i) {
+        int letterChangeCount = 0;
+        for (size_t j = 0; j < guess[i].length(); ++j) {
+            if (guess[i][j] != guess[i - 1][j]) {
+                letterChangeCount++;
+            }
+        }
+
+        if (letterChangeCount != 1) {
+            // If any pair of consecutive words does not differ by exactly one letter, return false
+            return false;
+        }
+    }
+
+    // If all checks pass, return true
+    return true;
+}
+
+
 void LetterLink::showLinks(vector<string> links) {
     for (int i = 0; i < links.size(); i++) {
         cout << links[i];
@@ -122,6 +156,7 @@ string LetterLink::findChain(vector<string>& wordlist, string& startword, const 
         }
     }
 
+    autochain = chain;
     chainlen = chain.size();
     return chain.back();
 }
