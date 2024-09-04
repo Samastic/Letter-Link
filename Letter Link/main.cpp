@@ -170,7 +170,7 @@ void LLFrame::OnAbout(wxCommandEvent& event)
 
 void LLFrame::OnDifficulty(wxCommandEvent& event)
 {
-    wxDialog* difficultyDialog = new wxDialog(this, wxID_ANY, "Select Difficulty", wxDefaultPosition, wxSize(xMargin * 8, yMargin * 32));
+    wxDialog* difficultyDialog = new wxDialog(this, wxID_ANY, "Select Difficulty", wxDefaultPosition, wxSize(xMargin * 4, yMargin * 24));
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
     // Create buttons for each difficulty level
@@ -185,22 +185,28 @@ void LLFrame::OnDifficulty(wxCommandEvent& event)
     difficulty2Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty2, this);
     difficulty3Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty3, this);
 
+    wxButton* backButton = new wxButton(difficultyDialog, wxID_ANY, "Back");
+    backButton->Bind(wxEVT_BUTTON, [difficultyDialog](wxCommandEvent&) {
+        difficultyDialog->Destroy();
+        });
     // Add buttons to the sizer
     sizer->Add(difficulty0Button, 0, wxALL | wxCENTER, 10);
     sizer->Add(difficulty1Button, 0, wxALL | wxCENTER, 10);
     sizer->Add(difficulty2Button, 0, wxALL | wxCENTER, 10);
     sizer->Add(difficulty3Button, 0, wxALL | wxCENTER, 10);
+    sizer->Add(backButton, 0, wxALL | wxCENTER, 10);
 
     // Set the sizer and show the dialog
     difficultyDialog->SetSizer(sizer);
     difficultyDialog->ShowModal();
+
+    difficultyDialog->Destroy();
 }
 
 void LLFrame::OnSetDifficulty0(wxCommandEvent& event)
 {
     LLGame.setDifficulty(0);
     MIN_WRITEABLE = LLGame.getMinWrite();
-    CloseDifficultyDialog();
     UpdateLayout(MIN_WRITEABLE);
     OnNewGame(event);
 }
@@ -209,7 +215,6 @@ void LLFrame::OnSetDifficulty1(wxCommandEvent& event)
 {
     LLGame.setDifficulty(1);
     MIN_WRITEABLE = LLGame.getMinWrite();
-    CloseDifficultyDialog();
     UpdateLayout(MIN_WRITEABLE);
     OnNewGame(event);
 }
@@ -218,7 +223,6 @@ void LLFrame::OnSetDifficulty2(wxCommandEvent& event)
 {
     LLGame.setDifficulty(2);
     MIN_WRITEABLE = LLGame.getMinWrite();
-    CloseDifficultyDialog();
     UpdateLayout(MIN_WRITEABLE);
     OnNewGame(event);
 }
@@ -227,23 +231,14 @@ void LLFrame::OnSetDifficulty3(wxCommandEvent& event)
 {
     LLGame.setDifficulty(3);
     MIN_WRITEABLE = LLGame.getMinWrite();
-    CloseDifficultyDialog();
     UpdateLayout(MIN_WRITEABLE);
     OnNewGame(event);
-}
-
-void LLFrame::CloseDifficultyDialog()
-{
-    wxWindow* parent = wxDynamicCast(wxWindow::FindWindowById(wxID_ANY, this), wxDialog);
-    if (parent) {
-        parent->Destroy();
-    }
 }
 
 
 void LLFrame::OnOptions(wxCommandEvent& event)
 {
-    wxDialog* optionsDialog = new wxDialog(this, wxID_ANY, "Options", wxDefaultPosition, wxSize(xMargin*8, yMargin*32));
+    wxDialog* optionsDialog = new wxDialog(this, wxID_ANY, "Options", wxDefaultPosition, wxSize(xMargin*4, yMargin*16));
 
     // Create sizer for vertical layout
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
@@ -305,10 +300,10 @@ void LLFrame::OnSubmit(wxCommandEvent& event)
     UpdateColorBoxes(guessResponse);
 
     if (isValidChain) {
-        wxMessageBox("You made a valid chain!", "Chain Validation", wxOK | wxICON_INFORMATION, this);
+        wxMessageBox("You Link the Letters!\nGood Job!!!", "Chain Validation", wxOK | wxICON_INFORMATION, this);
     }
     else {
-        wxMessageBox("Your chain is wrong!", "Chain Validation", wxOK | wxICON_ERROR, this);
+        wxMessageBox("Your chain is wrong!\nTry Again!", "Chain Validation", wxOK | wxICON_ERROR, this);
     }
 }
 
