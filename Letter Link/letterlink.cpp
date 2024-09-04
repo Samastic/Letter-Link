@@ -1,4 +1,5 @@
 #include "letterlink.h"
+ 
 
 void LetterLink::setDifficulty(int difficulty) {
     switch (difficulty) {
@@ -36,16 +37,16 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
         valid = false;
     }
 
-    // Check that all middle words (excluding the first and last) are in the wordlist
+    
     for (size_t i = 1; i < guess.size() - 1; ++i) {
+        // Check that all middle words (excluding the first and last) are in the wordlist
         if (find(wordlist.begin(), wordlist.end(), guess[i]) == wordlist.end()) {
             guessResponse[i - 1] = 1;
             valid = false;
         }
-    }
 
-    // Check that each word in the guess differs by exactly one letter from the previous word
-    for (size_t i = 1; i < guess.size() - 1; ++i) {
+
+        // Check that each word in the guess differs by exactly one letter from the previous word
         int letterChangeCount = 0;
         for (size_t j = 0; j < guess[i].length(); ++j) {
             if (guess[i][j] != guess[i - 1][j]) {
@@ -60,6 +61,13 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
                 guessResponse[i - 1] = 2;
             }
         }
+    }
+
+   
+    for (size_t i = 1; i < guess.size() - 1; ++i) {
+        
+
+        
     }
     return valid;
 }
@@ -226,3 +234,4 @@ LetterLink::LetterLink() {
 
     cout << "Wordset (" << wordset[0] << ", " << wordset[1] << ")\n";
 }
+

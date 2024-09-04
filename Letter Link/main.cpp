@@ -1,5 +1,4 @@
 #include "letterlink.h"
-#include <wx/panel.h>
 
 class LLApp : public wxApp
 {
@@ -29,13 +28,13 @@ private:
     void OnAddTextBox(wxCommandEvent& event);
     void OnRemoveTextBox(wxCommandEvent& event);
     void UpdateButtonAccessibility();
+    void ResetButtons(int minWrite, int& numWritableBoxes);
 
     void OnDifficulty(wxCommandEvent& event);
     void OnSetDifficulty0(wxCommandEvent& event);
     void OnSetDifficulty1(wxCommandEvent& event);
     void OnSetDifficulty2(wxCommandEvent& event);
     void OnSetDifficulty3(wxCommandEvent& event);
-    void CloseDifficultyDialog();
 
     // Additional private members for difficulty buttons
     wxButton* difficulty0Button;
@@ -137,6 +136,7 @@ LLFrame::LLFrame()
     Bind(wxEVT_BUTTON, &LLFrame::OnDifficulty, this, ID_Difficulty);
     Bind(wxEVT_BUTTON, &LLFrame::OnOptions, this, ID_Options);
     Bind(wxEVT_BUTTON, &LLFrame::OnQuit, this, ID_Quit);
+
     Bind(wxEVT_BUTTON, &LLFrame::OnRemoveTextBox, this, ID_RemoveTextBox);
     Bind(wxEVT_BUTTON, &LLFrame::OnAddTextBox, this, ID_AddTextBox);
 
@@ -400,27 +400,18 @@ void LLFrame::UpdateColorBoxes(const vector<int>& guessResponse)
     }
 }
 
-void LLFrame::UpdateLayout() {
-    UpdateLayout(0);
-}
-
-void LLFrame::UpdateLayout(int minWrite)
+void LLFrame::ResetButtons(int minWrite, int& numWritableBoxes)
 {
-    int numWritableBoxes = writableTextBoxes.size();
-    if (minWrite) {
+    for (int i = 0; i < numWritableBoxes;i++) {
+            wxTextCtrl* lastTextBox = writableTextBoxes.back();
+            writableTextBoxes.pop_back();
+            lastTextBox->Destroy();
 
-
-        if (numWritableBoxes > minWrite) {
-            for (int i = 0; i < numWritableBoxes;i++) {
-                wxTextCtrl* lastTextBox = writableTextBoxes.back();
-                writableTextBoxes.pop_back();
-                lastTextBox->Destroy();
-
-                wxPanel* lastColorBox = colorBoxes.back();
-                colorBoxes.pop_back();
-                lastColorBox->Destroy();
-            }
+            wxPanel* lastColorBox = colorBoxes.back();
+            colorBoxes.pop_back();
+            lastColorBox->Destroy();
         }
+
 
         for (int i = 0; i < minWrite; i++) {
             wxTextCtrl* newTextBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(0, 0), wxTE_CENTER);
@@ -433,6 +424,19 @@ void LLFrame::UpdateLayout(int minWrite)
         }
 
         numWritableBoxes = minWrite;
+}
+
+
+void LLFrame::UpdateLayout()
+{
+    UpdateLayout(0);
+}
+
+void LLFrame::UpdateLayout(int minWrite)
+{
+    int numWritableBoxes = writableTextBoxes.size();
+    if (minWrite) {
+        ResetButtons(minWrite, numWritableBoxes);
     }
 
     int windowWidth, windowHeight;

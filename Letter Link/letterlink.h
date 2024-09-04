@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <wx/wx.h>
+#include <wx/panel.h>
 
 using namespace std;
 
