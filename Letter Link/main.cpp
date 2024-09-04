@@ -1,6 +1,4 @@
 #include "letterlink.h"
-
-// Add this to the list of includes
 #include <wx/panel.h>
 
 class LLApp : public wxApp
@@ -20,22 +18,30 @@ private:
     void OnNewGame(wxCommandEvent& event);
     void OnExit(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+    void OnOptions(wxCommandEvent& event);
+    void OnQuit(wxCommandEvent& event);
     void OnAddTextBox(wxCommandEvent& event);
     void OnRemoveTextBox(wxCommandEvent& event);
     void OnSubmit(wxCommandEvent& event);
     void OnShowChain(wxCommandEvent& event);
+    void OnDifficulty(wxCommandEvent& event); // New event handler for difficulty
     void UpdateLayout();
     void SetInteractable(bool interactable);
     void OnResize(wxSizeEvent& event);
     void UpdateButtonAccessibility();
-    void UpdateColorBoxes(const vector<int>& guessResponse); // New function to update color boxes
+    void UpdateColorBoxes(const vector<int>& guessResponse);
 
     vector<wxTextCtrl*> writableTextBoxes;
-    wxButton* minusButton; // Only one minus button
-    vector<wxPanel*> colorBoxes; // New vector to store color boxes
-    int topMargin = 50;
-    int boxHeight = 30;
-    int verticalSpacing = 20;
+    wxButton* minusButton;
+    wxButton* newGameButton;  // New Game button
+    wxButton* aboutButton;    // About button
+    wxButton* difficultyButton; // Difficulty button
+    wxButton* optionsButton; // Additional button 1
+    wxButton* quitButton; // Additional button 2
+    vector<wxPanel*> colorBoxes;
+    int xMargin, yMargin;
+    int const MAX_WRITEABLE = 8, MIN_WRITEABLE = 3;
+
     wxTextCtrl* startword;
     wxTextCtrl* endword;
     wxButton* plusButton;
@@ -47,9 +53,13 @@ enum
 {
     ID_NewGame = 1,
     ID_AddTextBox,
-    ID_RemoveTextBox, // New ID for remove button
+    ID_RemoveTextBox,
     ID_Submit,
-    ID_ShowChain
+    ID_ShowChain,
+    ID_About,
+    ID_Difficulty, // New ID for difficulty
+    ID_Options,
+    ID_Quit
 };
 
 bool LLApp::OnInit()
@@ -62,62 +72,55 @@ bool LLApp::OnInit()
 LLFrame::LLFrame()
     : wxFrame(nullptr, wxID_ANY, "Letter Link")
 {
-    // Set the height to match the monitor's height
     int screenHeight = wxSystemSettings::GetMetric(wxSYS_SCREEN_Y);
     int screenWidth = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
     SetSize(wxSize(screenWidth / 2, screenHeight));
 
-    wxMenu* menuOptions = new wxMenu;
-    menuOptions->Append(ID_NewGame, "&New Game...\tCtrl-S", "Start a new game");
-    menuOptions->Append(ID_ShowChain, "&Show Chain...\tCtrl-C", "Show the auto-generated chain");
-    menuOptions->AppendSeparator();
-    menuOptions->Append(wxID_EXIT);
-
-    wxMenu* menuHelp = new wxMenu;
-    menuHelp->Append(wxID_ABOUT);
-
-    wxMenuBar* menuBar = new wxMenuBar;
-    menuBar->Append(menuOptions, "&Options");
-    menuBar->Append(menuHelp, "&Help");
-
-    SetMenuBar(menuBar);
+    xMargin = screenWidth / 32;
+    yMargin = screenHeight / 64;
 
     CreateStatusBar();
     SetStatusText("Welcome to Letter Link!");
 
-    Bind(wxEVT_MENU, &LLFrame::OnAbout, this, wxID_ABOUT);
-    Bind(wxEVT_MENU, &LLFrame::OnExit, this, wxID_EXIT);
-    Bind(wxEVT_MENU, &LLFrame::OnNewGame, this, ID_NewGame);
-    Bind(wxEVT_MENU, &LLFrame::OnShowChain, this, ID_ShowChain);
-
-    // Create all UI elements initially
-    startword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, topMargin), wxSize(screenWidth / 4 - 10, boxHeight), wxTE_READONLY);
-    startword->SetMaxLength(5); // Set maximum length to 5
+    // Create UI elements
+    startword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(0, 0), wxTE_READONLY);
+    startword->SetMaxLength(5);
 
     for (int i = 0; i < 3; ++i) {
-        wxTextCtrl* textBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, topMargin + (i + 1) * (boxHeight + verticalSpacing)), wxSize(screenWidth / 4 - 10, boxHeight));
-        textBox->SetMaxLength(5); // Set maximum length to 5
-        writableTextBoxes.push_back(textBox);
-
-        wxPanel* colorBox = new wxPanel(this, wxID_ANY, wxPoint(260, topMargin + (i + 1) * (boxHeight + verticalSpacing)), wxSize(30, boxHeight));
+        wxPanel* colorBox = new wxPanel(this, wxID_ANY);
         colorBox->SetBackgroundColour(*wxWHITE);
         colorBoxes.push_back(colorBox);
+
+        wxTextCtrl* textBox = new wxTextCtrl(this, wxID_ANY, "");
+        textBox->SetMaxLength(5);
+        writableTextBoxes.push_back(textBox);
     }
 
-    minusButton = new wxButton(this, ID_RemoveTextBox, "-", wxPoint(220, topMargin + (writableTextBoxes.size()) * (boxHeight + verticalSpacing)), wxSize(30, boxHeight));
+    minusButton = new wxButton(this, ID_RemoveTextBox, "-", wxPoint(0, 0), wxSize(0, 0));
     Bind(wxEVT_BUTTON, &LLFrame::OnRemoveTextBox, this, ID_RemoveTextBox);
 
-    endword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, topMargin + 4 * (boxHeight + verticalSpacing)), wxSize(screenWidth / 4 - 10, boxHeight), wxTE_READONLY);
-    endword->SetMaxLength(5); // Set maximum length to 5
+    endword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(0, 0), wxTE_READONLY);
+    endword->SetMaxLength(5);
 
-    plusButton = new wxButton(this, ID_AddTextBox, "+", wxPoint(260, topMargin + (writableTextBoxes.size() + 2) * (boxHeight + verticalSpacing)));
-    submitButton = new wxButton(this, ID_Submit, "Submit", wxPoint(10, topMargin + (writableTextBoxes.size() + 2) * (boxHeight + verticalSpacing)));
+    plusButton = new wxButton(this, ID_AddTextBox, "+");
+    submitButton = new wxButton(this, ID_Submit, "Submit");
+
+    // New buttons
+    newGameButton = new wxButton(this, ID_NewGame, "New Game");
+    aboutButton = new wxButton(this, ID_About, "About");
+    difficultyButton = new wxButton(this, ID_Difficulty, "Difficulty");
+    optionsButton = new wxButton(this, ID_Options, "Options");
+    quitButton = new wxButton(this, ID_Quit, "Quit");
 
     // Bind buttons to event handlers
     Bind(wxEVT_BUTTON, &LLFrame::OnAddTextBox, this, ID_AddTextBox);
     Bind(wxEVT_BUTTON, &LLFrame::OnSubmit, this, ID_Submit);
+    Bind(wxEVT_BUTTON, &LLFrame::OnNewGame, this, ID_NewGame);
+    Bind(wxEVT_BUTTON, &LLFrame::OnAbout, this, ID_About);
+    Bind(wxEVT_BUTTON, &LLFrame::OnDifficulty, this, ID_Difficulty);
+    Bind(wxEVT_BUTTON, &LLFrame::OnOptions, this, ID_Options);
+    Bind(wxEVT_BUTTON, &LLFrame::OnQuit, this, ID_Quit);
 
-    // Make all controls unclickable initially
     SetInteractable(false);
 
     Bind(wxEVT_SIZE, &LLFrame::OnResize, this);
@@ -127,16 +130,28 @@ LLFrame::LLFrame()
 
 void LLFrame::OnNewGame(wxCommandEvent& event)
 {
-    // Generate a new chain and make controls interactable
     LLGame.newChain();
     vector<string> wordset = LLGame.getWordset();
 
-    // Set start and end words
     startword->SetValue(wordset.size() > 0 ? wordset[0] : "");
     endword->SetValue(wordset.size() > 1 ? wordset[1] : "");
 
-    // Make all controls interactable
     SetInteractable(true);
+}
+
+void LLFrame::OnAbout(wxCommandEvent& event)
+{
+    wxMessageBox("Explain the freaking game", "About Letter Link", wxOK | wxICON_INFORMATION);
+}
+
+void LLFrame::OnDifficulty(wxCommandEvent& event)
+{
+    wxMessageBox("This is a dummy Difficulty popup", "Difficulty", wxOK | wxICON_INFORMATION);
+}
+
+void LLFrame::OnOptions(wxCommandEvent& event)
+{
+    wxMessageBox("This is a dummy Options popup", "Options", wxOK | wxICON_INFORMATION);
 }
 
 void LLFrame::SetInteractable(bool interactable)
@@ -149,22 +164,22 @@ void LLFrame::SetInteractable(bool interactable)
         textBox->Enable(interactable);
     }
 
-    minusButton->Enable(interactable && writableTextBoxes.size() > 3);
-    plusButton->Enable(interactable && writableTextBoxes.size() < 7);
+    minusButton->Enable(interactable && writableTextBoxes.size() > MIN_WRITEABLE);
+    plusButton->Enable(interactable && writableTextBoxes.size() < MAX_WRITEABLE);
     submitButton->Enable(interactable);
 }
 
 void LLFrame::OnAddTextBox(wxCommandEvent& event)
 {
-    if (writableTextBoxes.size() >= 7) {
+    if (writableTextBoxes.size() >= MAX_WRITEABLE) {
         return;
     }
 
-    wxTextCtrl* newTextBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, topMargin + (writableTextBoxes.size() + 1) * (boxHeight + verticalSpacing)), wxSize(200, boxHeight));
+    wxTextCtrl* newTextBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(10, yMargin + (writableTextBoxes.size() + 1) * (yMargin)), wxSize(200, yMargin));
     newTextBox->SetMaxLength(5);
     writableTextBoxes.push_back(newTextBox);
 
-    wxPanel* newColorBox = new wxPanel(this, wxID_ANY, wxPoint(260, topMargin + (writableTextBoxes.size() + 1) * (boxHeight + verticalSpacing)), wxSize(30, boxHeight));
+    wxPanel* newColorBox = new wxPanel(this, wxID_ANY, wxPoint(260, yMargin + (writableTextBoxes.size() + 1) * (yMargin)), wxSize(30, yMargin));
     newColorBox->SetBackgroundColour(*wxWHITE);
     colorBoxes.push_back(newColorBox);
 
@@ -174,7 +189,7 @@ void LLFrame::OnAddTextBox(wxCommandEvent& event)
 
 void LLFrame::OnRemoveTextBox(wxCommandEvent& event)
 {
-    if (writableTextBoxes.size() <= 3) {
+    if (writableTextBoxes.size() <= MIN_WRITEABLE) {
         return;
     }
 
@@ -193,21 +208,20 @@ void LLFrame::OnRemoveTextBox(wxCommandEvent& event)
 void LLFrame::UpdateButtonAccessibility()
 {
 
-    if (writableTextBoxes.size() > 3) {
+    if (writableTextBoxes.size() > MIN_WRITEABLE) {
         minusButton->Enable();
     }
     else {
         minusButton->Disable();
     }
 
-    if (writableTextBoxes.size() >= 7) {
+    if (writableTextBoxes.size() >= MAX_WRITEABLE) {
         plusButton->Disable();
     }
     else {
         plusButton->Enable();
     }
 }
-
 
 void LLFrame::OnSubmit(wxCommandEvent& event)
 {
@@ -268,75 +282,87 @@ void LLFrame::UpdateColorBoxes(const vector<int>& guessResponse)
 
 void LLFrame::UpdateLayout()
 {
+    // Updated layout code to position new buttons appropriately
     int numWritableBoxes = writableTextBoxes.size();
     int windowWidth, windowHeight;
     GetClientSize(&windowWidth, &windowHeight);
 
-    int horizontalMargin = windowWidth / 32;
-    int verticalMargin = windowHeight / 64;
-    int textBoxWidth = (windowWidth / 2) - (2 * horizontalMargin);
+    xMargin = windowWidth / 16;
+    yMargin = windowHeight / 32;
+
+    int textBoxWidth = (windowWidth / 2) - (2 * xMargin);
+    int medBoxWidth = textBoxWidth / 1.32;
+    int smallBoxWidth = textBoxWidth / 4;
     int buttonHeight = windowHeight / 12;
-    int fontSize = std::max(8, buttonHeight / 2);
+    int bigFontSize = buttonHeight / 2;
+    int smallFontSize = buttonHeight / 2.25;
 
-    wxFont font(fontSize, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+    wxFont bigFont(bigFontSize, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+    wxFont smallFont(smallFontSize, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 
-    std::vector<std::pair<wxTextCtrl*, int>> textCtrls = {
-        {startword, 0}, {endword, numWritableBoxes + 1}
-    };
+    startword->SetSize(wxSize(textBoxWidth, buttonHeight));
+    startword->SetPosition(wxPoint(xMargin + smallBoxWidth, yMargin));
+    startword->SetFont(bigFont);
 
-    for (int i = 0; i < textCtrls.size(); ++i)
-    {
-        wxTextCtrl* textCtrl = textCtrls[i].first;
-        int positionIndex = textCtrls[i].second;
-
-        textCtrl->SetSize(wxSize(textBoxWidth, buttonHeight));
-        textCtrl->SetPosition(wxPoint(horizontalMargin, verticalMargin + positionIndex * (buttonHeight + verticalMargin)));
-        textCtrl->SetFont(font);
-    }
+    endword->SetSize(wxSize(textBoxWidth, buttonHeight));
+    endword->SetPosition(wxPoint(xMargin + smallBoxWidth, yMargin + (numWritableBoxes + 1) * (buttonHeight + yMargin)));
+    endword->SetFont(bigFont);
 
     for (int i = 0; i < numWritableBoxes; ++i)
     {
+        colorBoxes[i]->SetSize(wxSize(smallBoxWidth, buttonHeight));
+        colorBoxes[i]->SetPosition(wxPoint(xMargin / 2, yMargin + (i + 1) * (buttonHeight + yMargin)));
+
         writableTextBoxes[i]->SetSize(wxSize(textBoxWidth, buttonHeight));
-        writableTextBoxes[i]->SetPosition(wxPoint(horizontalMargin, verticalMargin + (i + 1) * (buttonHeight + verticalMargin)));
-        writableTextBoxes[i]->SetFont(font);
-
-        if (i == numWritableBoxes - 1) {
-            minusButton->SetSize(wxSize(textBoxWidth / 4, buttonHeight));
-            minusButton->SetPosition(wxPoint(horizontalMargin + textBoxWidth + 5, verticalMargin + (i + 1) * (buttonHeight + verticalMargin)));
-        }
-
-        colorBoxes[i]->SetSize(wxSize(textBoxWidth / 4, buttonHeight));
-        colorBoxes[i]->SetPosition(wxPoint(horizontalMargin + textBoxWidth + (textBoxWidth / 4), verticalMargin + (i + 1) * (buttonHeight + verticalMargin)));
+        writableTextBoxes[i]->SetPosition(wxPoint(xMargin + smallBoxWidth, yMargin + (i + 1) * (buttonHeight + yMargin)));
+        writableTextBoxes[i]->SetFont(bigFont);
     }
 
-    // Set button sizes to match text entry boxes
-    plusButton->SetSize(wxSize(textBoxWidth, buttonHeight));
-    submitButton->SetSize(wxSize(textBoxWidth, buttonHeight));
+    minusButton->SetSize(wxSize(textBoxWidth / 4, buttonHeight));
+    minusButton->SetPosition(wxPoint((xMargin * 1.5) + smallBoxWidth + textBoxWidth, yMargin + (numWritableBoxes + 1) * (buttonHeight + yMargin)));
+    minusButton->SetFont(smallFont);
 
-    plusButton->SetFont(font);
-    submitButton->SetFont(font);
+    plusButton->SetSize(wxSize(textBoxWidth / 4, buttonHeight));
+    plusButton->SetPosition(wxPoint((xMargin * 1.5) + smallBoxWidth + textBoxWidth, yMargin + (numWritableBoxes + 2) * (buttonHeight + yMargin)));
+    plusButton->SetFont(smallFont);
 
-    // Center buttons at the bottom
-    int centerX = (windowWidth - (2 * textBoxWidth)) / 3;
-    plusButton->SetPosition(wxPoint(centerX, windowHeight - buttonHeight - verticalMargin));
-    submitButton->SetPosition(wxPoint(centerX + textBoxWidth + centerX, windowHeight - buttonHeight - verticalMargin));
+    // Positioning new buttons
+    newGameButton->SetSize(wxSize(medBoxWidth, buttonHeight));
+    newGameButton->SetPosition(wxPoint(windowWidth - medBoxWidth - xMargin / 2, yMargin));
+    newGameButton->SetFont(smallFont);
+
+    difficultyButton->SetSize(wxSize(medBoxWidth, buttonHeight));
+    difficultyButton->SetPosition(wxPoint(windowWidth - medBoxWidth - xMargin / 2, (2 * yMargin)+buttonHeight));
+    difficultyButton->SetFont(smallFont);
+
+    aboutButton->SetSize(wxSize(medBoxWidth, buttonHeight));
+    aboutButton->SetPosition(wxPoint(windowWidth - medBoxWidth - xMargin / 2, (3 * yMargin) + (2 * buttonHeight)));
+    aboutButton->SetFont(smallFont);
+
+    optionsButton->SetSize(wxSize(medBoxWidth, buttonHeight));
+    optionsButton->SetPosition(wxPoint(windowWidth - medBoxWidth - xMargin / 2, (4 * yMargin) + (3 * buttonHeight)));
+    optionsButton->SetFont(smallFont);
+
+    
+    submitButton->SetSize(wxSize(medBoxWidth, buttonHeight));
+    submitButton->SetFont(smallFont);
+    submitButton->SetPosition(wxPoint(windowWidth - medBoxWidth - xMargin / 2, (5 * yMargin) + (5 * buttonHeight)));
+
+
+    quitButton->SetSize(wxSize(medBoxWidth, buttonHeight));
+    quitButton->SetPosition(wxPoint(windowWidth - medBoxWidth - xMargin / 2, (8 * yMargin) + (7 * buttonHeight)));
+    quitButton->SetFont(smallFont);
 
     Refresh();
 }
 
-void LLFrame::OnExit(wxCommandEvent& event)
+void LLFrame::OnQuit(wxCommandEvent& event)
 {
     Close(true);
 }
 
-void LLFrame::OnAbout(wxCommandEvent& event)
-{
-    wxMessageBox("This is a wxWidgets Hello World example",
-        "About Hello World", wxOK | wxICON_INFORMATION);
-}
-
 void LLFrame::OnResize(wxSizeEvent& event)
 {
-    UpdateLayout();  // Call UpdateLayout to adjust layout based on new size
-    event.Skip();    // Ensure the event is processed further
+    UpdateLayout();
+    event.Skip();
 }
