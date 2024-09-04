@@ -16,8 +16,9 @@ using namespace std;
 
 class LetterLink {
 private:
-    int MAX_CHAIN_SIZE = 6;
-    int MAX_MIRROR_SIZE = 1;
+    int MIN_WRITEABLE = 3;
+    int MAX_CHAIN_SIZE = 5;
+    int MAX_MIRROR_SIZE = 3;
     vector<string> wordlist;
     vector<string> wordset;
     
@@ -43,6 +44,10 @@ public:
 
     void changeChainMax(int newsize) { MAX_CHAIN_SIZE = newsize; }
     void changeMirrorMax(int newsize) { MAX_MIRROR_SIZE = newsize; }
+    void setDifficulty(int difficulty);
+
+    int getMinWrite() { return MIN_WRITEABLE; }
+    int getMaxChain() { return MAX_CHAIN_SIZE; }
 };
 
 

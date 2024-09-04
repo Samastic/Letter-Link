@@ -1,5 +1,33 @@
 #include "letterlink.h"
 
+void LetterLink::setDifficulty(int difficulty) {
+    switch (difficulty) {
+    case 0: // easy
+        MIN_WRITEABLE = 2;
+        MAX_CHAIN_SIZE = 4;
+        MAX_MIRROR_SIZE = 3;
+        break;
+    case 1: // normal
+        MIN_WRITEABLE = 4;
+        MAX_CHAIN_SIZE = 6;
+        MAX_MIRROR_SIZE = 2;
+        break;
+    case 2: // hard
+        MIN_WRITEABLE = 6;
+        MAX_CHAIN_SIZE = 8;
+        MAX_MIRROR_SIZE = 1;
+        break;
+    case 3: // impossible
+        MIN_WRITEABLE = 8;
+        MAX_CHAIN_SIZE = 10;
+        MAX_MIRROR_SIZE = 0;
+        break;
+    default:
+        // Handle invalid difficulty values if needed
+        break;
+    }
+}
+
 bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
     bool valid = true;
 
