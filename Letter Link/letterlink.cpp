@@ -1,21 +1,23 @@
 #include "letterlink.h"
 
-bool LetterLink::evalChain(vector<string>& guess) {
+bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
+    bool valid = true;
+
     // Check if the guess vector is empty or has fewer than two words (invalid input)
     if (guess.size() < 2) {
-        return false;
+        valid = false;
     }
 
     // Check that all middle words (excluding the first and last) are in the wordlist
     for (size_t i = 1; i < guess.size() - 1; ++i) {
         if (find(wordlist.begin(), wordlist.end(), guess[i]) == wordlist.end()) {
-            // If any middle word is not found in wordlist, return false
-            return false;
+            guessResponse[i - 1] = 1;
+            valid = false;
         }
     }
 
     // Check that each word in the guess differs by exactly one letter from the previous word
-    for (size_t i = 1; i < guess.size(); ++i) {
+    for (size_t i = 1; i < guess.size() - 1; ++i) {
         int letterChangeCount = 0;
         for (size_t j = 0; j < guess[i].length(); ++j) {
             if (guess[i][j] != guess[i - 1][j]) {
@@ -24,13 +26,14 @@ bool LetterLink::evalChain(vector<string>& guess) {
         }
 
         if (letterChangeCount != 1) {
-            // If any pair of consecutive words does not differ by exactly one letter, return false
-            return false;
+            valid = false;
+
+            if (guessResponse[i - 1] == 0) {
+                guessResponse[i - 1] = 2;
+            }
         }
     }
-
-    // If all checks pass, return true
-    return true;
+    return valid;
 }
 
 

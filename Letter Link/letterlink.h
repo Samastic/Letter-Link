@@ -16,8 +16,8 @@ using namespace std;
 
 class LetterLink {
 private:
-    const int MAX_CHAIN_SIZE = 6;
-    const int MAX_MIRROR_SIZE = 1;
+    int MAX_CHAIN_SIZE = 6;
+    int MAX_MIRROR_SIZE = 1;
     vector<string> wordlist;
     vector<string> wordset;
     
@@ -37,9 +37,12 @@ public:
     vector<string> guess;
     vector<string> autochain;
 
-    bool evalChain(vector<string>& guess);
+    bool evalChain(vector<string>& guess, vector<int>& guessResponse);
 
     void newChain(){ getChain(wordlist, wordset); }
+
+    void changeChainMax(int newsize) { MAX_CHAIN_SIZE = newsize; }
+    void changeMirrorMax(int newsize) { MAX_MIRROR_SIZE = newsize; }
 };
 
 
