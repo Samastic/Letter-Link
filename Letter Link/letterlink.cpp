@@ -6,7 +6,7 @@ void LetterLink::setDifficulty(int difficulty) {
     case 0: // easy
         MIN_WRITEABLE = 2;
         MAX_CHAIN_SIZE = 4;
-        MAX_MIRROR_SIZE = 3;
+        MAX_MIRROR_SIZE = 2;
         break;
     case 1: // normal
         MIN_WRITEABLE = 4;
@@ -30,7 +30,7 @@ void LetterLink::setDifficulty(int difficulty) {
 }
 
 bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
-    bool valid = true;
+    bool valid = true, empty = false;
 
     // Check if the guess vector is empty or has fewer than two words (invalid input)
     if (guess.size() < 2) {
@@ -39,36 +39,43 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
 
     
     for (size_t i = 1; i < guess.size() - 1; ++i) {
+        if (guess[i] == "" || guess[i][0] == ' ') {
+            guessResponse[i - 1] = 0;
+            valid = false;
+            empty = true;
+            continue;
+        }
+
         // Check that all middle words (excluding the first and last) are in the wordlist
         if (find(wordlist.begin(), wordlist.end(), guess[i]) == wordlist.end()) {
-            guessResponse[i - 1] = 1;
+            guessResponse[i - 1] = 2;
             valid = false;
+            continue;
         }
+        
 
 
         // Check that each word in the guess differs by exactly one letter from the previous word
         int letterChangeCount = 0;
-        for (size_t j = 0; j < guess[i].length(); ++j) {
-            if (guess[i][j] != guess[i - 1][j]) {
-                letterChangeCount++;
+        if (empty == false) {
+            for (size_t j = 0; j < guess[i].length(); ++j) {
+                if (guess[i][j] != guess[i - 1][j]) {
+                    letterChangeCount++;
+                }
+            }
+
+            if (letterChangeCount != 1) {
+                valid = false;
+                guessResponse[i - 1] = 3;
             }
         }
-
-        if (letterChangeCount != 1) {
-            valid = false;
-
-            if (guessResponse[i - 1] == 0) {
-                guessResponse[i - 1] = 2;
-            }
+        else {
+            empty = false;
         }
+
     }
 
    
-    for (size_t i = 1; i < guess.size() - 1; ++i) {
-        
-
-        
-    }
     return valid;
 }
 
