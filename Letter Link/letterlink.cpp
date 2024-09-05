@@ -1,63 +1,69 @@
 #include "letterlink.h"
  
-
 void LetterLink::setDifficulty(int difficulty) {
+    cout << "Setting difficulty to " << difficulty << ": ";
     switch (difficulty) {
     case 0: // easy
         MIN_WRITEABLE = 2;
         MAX_CHAIN_SIZE = 4;
         MAX_MIRROR_SIZE = 2;
         NOT_SAME_CHANGE = 1;
+        cout << "Easy mode\n";
         break;
     case 1: // normal
         MIN_WRITEABLE = 4;
         MAX_CHAIN_SIZE = 6;
         MAX_MIRROR_SIZE = 2;
         NOT_SAME_CHANGE = 2;
+        cout << "Normal mode\n";
         break;
     case 2: // hard
         MIN_WRITEABLE = 6;
         MAX_CHAIN_SIZE = 8;
         MAX_MIRROR_SIZE = 1;
         NOT_SAME_CHANGE = 4;
+        cout << "Hard mode\n";
         break;
     case 3: // impossible
         MIN_WRITEABLE = 8;
         MAX_CHAIN_SIZE = 10;
         MAX_MIRROR_SIZE = 0;
         NOT_SAME_CHANGE = 8;
+        cout << "Impossible mode\n";
         break;
     default:
-        // Handle invalid difficulty values if needed
+        cout << "Invalid difficulty\n";
         break;
     }
 }
+
 
 bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
     bool valid = true, empty = false;
 
     // Check if the guess vector is empty or has fewer than two words (invalid input)
     if (guess.size() < 2) {
+        cout << "Invalid guess size: less than 2 words\n";
         valid = false;
     }
 
-    
     for (size_t i = 1; i < guess.size() - 1; ++i) {
         if (guess[i] == "" || guess[i][0] == ' ') {
+            cout << "Empty or invalid word at position " << i << ": \"" << guess[i] << "\"\n";
             guessResponse[i - 1] = 0;
             valid = false;
             empty = true;
             continue;
         }
+        cout << "Evaluating word: \"" << guess[i] << "\"\n";
 
         // Check that all middle words (excluding the first and last) are in the wordlist
         if (find(wordlist.begin(), wordlist.end(), guess[i]) == wordlist.end()) {
+            cout << "Word \"" << guess[i] << "\" not found in wordlist\n";
             guessResponse[i - 1] = 2;
             valid = false;
             continue;
         }
-        
-
 
         // Check that each word in the guess differs by exactly one letter from the previous word
         int letterChangeCount = 0;
@@ -69,19 +75,23 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
             }
 
             if (letterChangeCount != 1) {
+                cout << "Word \"" << guess[i] << "\" changes " << letterChangeCount << " letters from previous word \"" << guess[i - 1] << "\"\n";
                 valid = false;
                 guessResponse[i - 1] = 3;
+                continue;
             }
         }
         else {
             empty = false;
+            continue;
         }
-
+        cout << "\tValid word!\n";
     }
 
-   
+    cout << "Chain evaluation result: " << (valid ? "Valid" : "Invalid") << "\n";
     return valid;
 }
+
 
 
 void LetterLink::showLinks(vector<string> links) {

@@ -15,6 +15,7 @@ public:
 
 private:
     void OnNewGame(wxCommandEvent& event);
+    void OnNewGame();
     void OnAbout(wxCommandEvent& event);
     void OnOptions(wxCommandEvent& event);
     void OnQuit(wxCommandEvent& event);
@@ -30,12 +31,7 @@ private:
     void UpdateButtonAccessibility();
     void ResetButtons(int minWrite, int& numWritableBoxes);
     void UpdateLayout();
-
     void OnDifficulty(wxCommandEvent& event);
-    void OnSetDifficulty0(wxCommandEvent& event);
-    void OnSetDifficulty1(wxCommandEvent& event);
-    void OnSetDifficulty2(wxCommandEvent& event);
-    void OnSetDifficulty3(wxCommandEvent& event);
 
    
 
@@ -84,12 +80,6 @@ enum
     ID_Quit
 };
 
-bool LLApp::OnInit()
-{
-    LLFrame* frame = new LLFrame();
-    frame->Show(true);
-    return true;
-}
 
 LLFrame::LLFrame()
     : wxFrame(nullptr, wxID_ANY, "Letter Link", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE & ~wxRESIZE_BORDER),
@@ -158,6 +148,13 @@ LLFrame::LLFrame()
     DrawGame();
 }
 
+void LLFrame::OnNewGame()
+{
+    // Create a dummy wxCommandEvent and call the original event handler
+    wxCommandEvent dummyEvent;
+    OnNewGame(dummyEvent);
+}
+
 void LLFrame::OnNewGame(wxCommandEvent& event)
 {
     MIN_WRITEABLE = LLGame.getMinWrite();
@@ -196,81 +193,45 @@ void LLFrame::OnAbout(wxCommandEvent& event)
 }
 
 
+// Inside the OnDifficulty function
 void LLFrame::OnDifficulty(wxCommandEvent& event)
 {
     wxDialog* difficultyDialog = new wxDialog(this, wxID_ANY, "Select Difficulty", wxDefaultPosition, wxSize(windowWidth / 2.25, windowHeight / 2.5));
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-    // Additional private members for difficulty buttons
-    wxButton* difficulty0Button;
-    wxButton* difficulty1Button;
-    wxButton* difficulty2Button;
-    wxButton* difficulty3Button;
 
     // Create buttons for each difficulty level
-    difficulty0Button = new wxButton(difficultyDialog, ID_Difficulty0, "Easy");
-    difficulty1Button = new wxButton(difficultyDialog, ID_Difficulty1, "Normal");
-    difficulty2Button = new wxButton(difficultyDialog, ID_Difficulty2, "Hard");
-    difficulty3Button = new wxButton(difficultyDialog, ID_Difficulty3, "Impossible");
+    wxButton* difficulty0Button = new wxButton(difficultyDialog, wxID_ANY, "Easy");
+    wxButton* difficulty1Button = new wxButton(difficultyDialog, wxID_ANY, "Normal");
+    wxButton* difficulty2Button = new wxButton(difficultyDialog, wxID_ANY, "Hard");
+    wxButton* difficulty3Button = new wxButton(difficultyDialog, wxID_ANY, "Impossible");
 
-    // Bind buttons to their event handlers
-    difficulty0Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty0, this);
-    difficulty1Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty1, this);
-    difficulty2Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty2, this);
-    difficulty3Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty3, this);
-
-
+    // Bind buttons to the respective difficulty level functions directly
+    difficulty0Button->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { LLGame.setDifficulty(0); OnNewGame(); });
+    difficulty1Button->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { LLGame.setDifficulty(1); OnNewGame(); });
+    difficulty2Button->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { LLGame.setDifficulty(2); OnNewGame(); });
+    difficulty3Button->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { LLGame.setDifficulty(3); OnNewGame(); });
 
     wxButton* backButton = new wxButton(difficultyDialog, wxID_ANY, "Back");
-    backButton->Bind(wxEVT_BUTTON, [difficultyDialog](wxCommandEvent&) {
-        difficultyDialog->Destroy();
-        });
-
+    backButton->Bind(wxEVT_BUTTON, [difficultyDialog](wxCommandEvent&) { difficultyDialog->Destroy(); });
 
     // Add buttons to the sizer
     sizer->Add(difficulty0Button, 0, wxALL | wxLEFT, 10);
     sizer->Add(difficulty1Button, 0, wxALL | wxLEFT, 10);
     sizer->Add(difficulty2Button, 0, wxALL | wxLEFT, 10);
     sizer->Add(difficulty3Button, 0, wxALL | wxLEFT, 10);
-    sizer->Add(backButton, 0, wxALL | wxLEFT, 10);   
+    sizer->Add(backButton, 0, wxALL | wxLEFT, 10);
 
     difficulty0Button->SetFont(bigFont);
     difficulty1Button->SetFont(bigFont);
     difficulty2Button->SetFont(bigFont);
     difficulty3Button->SetFont(bigFont);
 
-    backButton->SetSize(wxSize(medBoxWidth/2, boxHeight/2));
-    backButton->SetFont(medFont);
 
     // Set the sizer and show the dialog
     difficultyDialog->SetSizer(sizer);
     difficultyDialog->ShowModal();
-
     difficultyDialog->Destroy();
-}
-
-void LLFrame::OnSetDifficulty0(wxCommandEvent& event)
-{
-    LLGame.setDifficulty(0);
-    OnNewGame(event);
-}
-
-void LLFrame::OnSetDifficulty1(wxCommandEvent& event)
-{
-    LLGame.setDifficulty(1);
-    OnNewGame(event);
-}
-
-void LLFrame::OnSetDifficulty2(wxCommandEvent& event)
-{
-    LLGame.setDifficulty(2);
-    OnNewGame(event);
-}
-
-void LLFrame::OnSetDifficulty3(wxCommandEvent& event)
-{
-    LLGame.setDifficulty(3);
-    OnNewGame(event);
 }
 
 
@@ -557,4 +518,21 @@ void LLFrame::OnResize(wxSizeEvent& event)
 {
     DrawGame();
     event.Skip();
+}
+
+bool LLApp::OnInit()
+{
+    AllocConsole();
+
+    // Redirect standard output (stdout) to the console
+    FILE* stream;
+    freopen_s(&stream, "CONOUT$", "w", stdout);
+    freopen_s(&stream, "CONOUT$", "w", stderr);
+
+    // Optional: Set the console title
+    SetConsoleTitle(TEXT("Console Output"));
+
+    LLFrame* frame = new LLFrame();
+    frame->Show(true);
+    return true;
 }
