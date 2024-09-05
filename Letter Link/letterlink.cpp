@@ -7,21 +7,25 @@ void LetterLink::setDifficulty(int difficulty) {
         MIN_WRITEABLE = 2;
         MAX_CHAIN_SIZE = 4;
         MAX_MIRROR_SIZE = 2;
+        NOT_SAME_CHANGE = 1;
         break;
     case 1: // normal
         MIN_WRITEABLE = 4;
         MAX_CHAIN_SIZE = 6;
         MAX_MIRROR_SIZE = 2;
+        NOT_SAME_CHANGE = 2;
         break;
     case 2: // hard
         MIN_WRITEABLE = 6;
         MAX_CHAIN_SIZE = 8;
         MAX_MIRROR_SIZE = 1;
+        NOT_SAME_CHANGE = 4;
         break;
     case 3: // impossible
         MIN_WRITEABLE = 8;
         MAX_CHAIN_SIZE = 10;
         MAX_MIRROR_SIZE = 0;
+        NOT_SAME_CHANGE = 8;
         break;
     default:
         // Handle invalid difficulty values if needed
@@ -188,7 +192,7 @@ string LetterLink::findChain(vector<string>& wordlist, string& startword, const 
                 nextword = links[RandomInt(links.size())];
                 wordCheck(checkword, nextword, change);
                 timeout++;
-            } while (change == lastchange && timeout < 11);
+            } while (change == lastchange && timeout < NOT_SAME_CHANGE);
 
             chain.push_back(nextword);
             lastchange = change;

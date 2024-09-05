@@ -219,27 +219,24 @@ void LLFrame::OnDifficulty(wxCommandEvent& event)
     difficulty2Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty2, this);
     difficulty3Button->Bind(wxEVT_BUTTON, &LLFrame::OnSetDifficulty3, this);
 
+
+
     wxButton* backButton = new wxButton(difficultyDialog, wxID_ANY, "Back");
     backButton->Bind(wxEVT_BUTTON, [difficultyDialog](wxCommandEvent&) {
         difficultyDialog->Destroy();
         });
+
+
     // Add buttons to the sizer
-    sizer->Add(difficulty0Button, 0, wxALL | wxCENTER, 10);
-    sizer->Add(difficulty1Button, 0, wxALL | wxCENTER, 10);
-    sizer->Add(difficulty2Button, 0, wxALL | wxCENTER, 10);
-    sizer->Add(difficulty3Button, 0, wxALL | wxCENTER, 10);
-    sizer->Add(backButton, 0, wxALL | wxCENTER, 10);
+    sizer->Add(difficulty0Button, 0, wxALL | wxLEFT, 10);
+    sizer->Add(difficulty1Button, 0, wxALL | wxLEFT, 10);
+    sizer->Add(difficulty2Button, 0, wxALL | wxLEFT, 10);
+    sizer->Add(difficulty3Button, 0, wxALL | wxLEFT, 10);
+    sizer->Add(backButton, 0, wxALL | wxLEFT, 10);   
 
-    difficulty0Button->SetSize(wxSize(medBoxWidth, boxHeight));
     difficulty0Button->SetFont(bigFont);
-
-    difficulty1Button->SetSize(wxSize(medBoxWidth, boxHeight));
     difficulty1Button->SetFont(bigFont);
-
-    difficulty2Button->SetSize(wxSize(medBoxWidth, boxHeight));
     difficulty2Button->SetFont(bigFont);
-
-    difficulty3Button->SetSize(wxSize(medBoxWidth, boxHeight));
     difficulty3Button->SetFont(bigFont);
 
     backButton->SetSize(wxSize(medBoxWidth/2, boxHeight/2));
@@ -394,7 +391,7 @@ void LLFrame::OnSubmit(wxCommandEvent& event)
     UpdateColorBoxes(guessResponse);
 
     if (isValidChain) {
-        wxMessageBox("You Link the Letters!\nNow it's only 70$ for the full version!!", "Chain Validation", wxOK | wxICON_INFORMATION, this);
+        wxMessageBox("You Link the Letters!\n\m", "Chain Validation", wxOK | wxICON_INFORMATION, this, wxTE_CENTER);
     }
 }
 

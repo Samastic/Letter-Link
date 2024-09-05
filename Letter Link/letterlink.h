@@ -17,21 +17,26 @@ using namespace std;
 
 class LetterLink {
 private:
-    int MIN_WRITEABLE = 4;
-    int MAX_CHAIN_SIZE = 6;
-    int MAX_MIRROR_SIZE = 3;
-    vector<string> wordlist;
-    vector<string> wordset;
-    
+    int MIN_WRITEABLE = 4; //minimum writeable spaces
+    int MAX_CHAIN_SIZE = 6; //maximum total chain size
+    int MAX_MIRROR_SIZE = 3; //maximum amount of letters that are identical (same char + position) in the wordset 
+    int NOT_SAME_CHANGE = 2; //maximum attempts made by chain finder to find a word that doesn't change a letter of the same position
+    //should only ever be changed by setDifficulty()
 
-    void showLinks(vector<string> links);
-    int RandomInt(int size);
+    vector<string> wordlist; //total set of possible words
+    vector<string> wordset; //first and last word of the chain
+    
+    void getChain(vector<string>& wordlist, vector<string>& wordset);
+    string findChain(vector<string>& wordlist, string& startword, const int LISTLEN, int& chainlen);
+
     bool wordCheck(string& word, string& check, int& change);
     bool wordCheck(string& word, string& check);
     bool repeatWord(string word, vector<string>& chain);
     bool mirrorCheck(vector<string>& wordset);
-    string findChain(vector<string>& wordlist, string& startword, const int LISTLEN, int& chainlen);
-    void getChain(vector<string>& wordlist, vector<string>& wordset);
+
+    void showLinks(vector<string> links);
+    int RandomInt(int size);
+
 
 public:
     LetterLink();  // Constructor that initializes the program
