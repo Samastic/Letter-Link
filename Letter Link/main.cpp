@@ -52,7 +52,7 @@ private:
 
     int xMargin, yMargin, topMargin;
     const int MAX_WRITEABLE = 9;
-    int SOFT_MAX_WRITEABLE = 4, MIN_WRITEABLE = 2;
+    int SOFT_MAX_WRITEABLE = 6, MIN_WRITEABLE = 2;
     int textBoxWidth, medBoxWidth, smallBoxWidth, boxHeight;
     int gameFontSize, bigFontSize, medFontSize;
     wxFont gameFont;
@@ -102,7 +102,7 @@ LLFrame::LLFrame()
 
     GetClientSize(&windowWidth, &windowHeight);
 
-    windowWidth /= 2;
+    windowWidth /= 2.5;
     windowHeight += (windowHeight / 32);
 
     Maximize(false);
@@ -131,7 +131,7 @@ LLFrame::LLFrame()
     aboutButton = new wxButton(this, ID_About, "About");
     difficultyButton = new wxButton(this, ID_Difficulty, "Difficulty");
     optionsButton = new wxButton(this, ID_Options, "Options");
-    quitButton = new wxButton(this, ID_Quit, "Quit");
+    quitButton = new wxButton(this, ID_Quit, "QUIT");
     submitButton = new wxButton(this, ID_Submit, "Submit");
     minusButton = new wxButton(this, ID_RemoveTextBox, "-");
     plusButton = new wxButton(this, ID_AddTextBox, "+");
@@ -151,6 +151,8 @@ LLFrame::LLFrame()
     SetInteractable(false);
 
     Bind(wxEVT_SIZE, &LLFrame::OnResize, this);
+
+    LLGame.setDifficulty(1);
 
     UpdateLayout();
     DrawGame();
@@ -502,7 +504,7 @@ void LLFrame::UpdateLayout()
     smallBoxWidth = textBoxWidth / 4;
     boxHeight = windowHeight / 14;
     gameFontSize = boxHeight / 1.75;
-    bigFontSize = boxHeight / 2.25;
+    bigFontSize = boxHeight / 2.5;
     medFontSize = boxHeight / 4;
 
     gameFont.SetPointSize(gameFontSize);

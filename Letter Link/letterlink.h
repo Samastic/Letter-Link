@@ -17,8 +17,8 @@ using namespace std;
 
 class LetterLink {
 private:
-    int MIN_WRITEABLE = 3;
-    int MAX_CHAIN_SIZE = 4;
+    int MIN_WRITEABLE = 4;
+    int MAX_CHAIN_SIZE = 6;
     int MAX_MIRROR_SIZE = 3;
     vector<string> wordlist;
     vector<string> wordset;
