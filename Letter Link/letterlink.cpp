@@ -83,6 +83,7 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
         }
         else {
             empty = false;
+            guessResponse[i - 1] = 3;
             continue;
         }
         cout << "\tValid word!\n";
