@@ -25,10 +25,8 @@ private:
     void DrawGame(int minWrite);
     void SetInteractable(bool interactable);
     void OnResize(wxSizeEvent& event);
-    void UpdateColorBoxes(const vector<int>& guessResponse);
-    void OnAddTextBox();
+    void UpdateColorBoxes(const vector<int>& evalBefore);
     void OnAddTextBox(wxCommandEvent& event);
-    void OnRemoveTextBox();
     void OnRemoveTextBox(wxCommandEvent& event);
     void UpdateButtonAccessibility();
     void ResetButtons(int minWrite, int& numWritableBoxes);
@@ -49,7 +47,7 @@ private:
     vector<wxButton*> minusButtons;
 
     int xMargin, yMargin, topMargin;
-    const int MAX_WRITEABLE = 9;
+    const int MAX_WRITEABLE = 10;
     int SOFT_MAX_WRITEABLE = 6, MIN_WRITEABLE = 4;
     int textBoxWidth, medBoxWidth, smallBoxWidth, boxHeight;
     int gameFontSize, bigFontSize, medFontSize;
@@ -178,9 +176,11 @@ void LLFrame::OnAbout(wxCommandEvent& event)
     wxString aboutText = wxT(
         "Letter Link\n\n"
         "A word-chain forming game!\n\n"
+
         "Description:\n"
         "Letter Link is a game where you form chains of words by switching a single letter each time.\n"
         "At the start of each game, you are given two words, and you have to find the accompanying word chain.\n\n"
+
         "For example, if the starting wordset is (lured, roped), then the chain would look like this:\n"
         "- lured\n"
         "- cured\n"
@@ -189,7 +189,13 @@ void LLFrame::OnAbout(wxCommandEvent& event)
         "- cored\n"
         "- coped\n"
         "- roped\n\n"
-        "This game is based off the 'word chains' concept as seen in CodeParade's Exploring Word Chain videos.\n"
+
+        "The color of the box on the left tell you about the word:\n"
+        "- RED - not a word\n"
+        "- YELLOW - a word, doesn't connect chain\n"
+        "- GREEN - valid chain word\n\n"
+
+        "\nThis game is based off the 'word chains' concept as seen in CodeParade's Exploring Word Chain video.\n"
     );
 
     wxMessageBox(aboutText, "About Letter Link", wxOK | wxICON_INFORMATION);
@@ -281,16 +287,19 @@ void LLFrame::SetInteractable(bool interactable)
     submitButton->Enable(interactable);
 }
 
-void LLFrame::OnAddTextBox()
-{
-    wxCommandEvent dummyEvent;
-    OnAddTextBox(dummyEvent);
-}
-
 void LLFrame::OnAddTextBox(wxCommandEvent& event)
 {
+    vector<string> reguess;
+    int insertPos;
+
     if (writableTextBoxes.size() >= MAX_WRITEABLE || writableTextBoxes.size() >= SOFT_MAX_WRITEABLE) {
         return;
+    }
+
+    reguess.clear();
+    for (auto it = writableTextBoxes.rbegin(); it != writableTextBoxes.rend(); ++it)
+    {
+        reguess.push_back((*it)->GetValue().ToStdString());
     }
 
     wxTextCtrl* newTextBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0,0), wxSize(0,0), wxTE_CENTER);
@@ -307,12 +316,6 @@ void LLFrame::OnAddTextBox(wxCommandEvent& event)
 
     DrawGame();
     UpdateButtonAccessibility();
-}
-
-void LLFrame::OnRemoveTextBox()
-{
-    wxCommandEvent dummyEvent;
-    OnRemoveTextBox(dummyEvent);
 }
 
 void LLFrame::OnRemoveTextBox(wxCommandEvent& event) {
@@ -368,29 +371,32 @@ void LLFrame::UpdateButtonAccessibility()
 
 void LLFrame::OnSubmit(wxCommandEvent& event)
 {
-    LLGame.guess.clear();
+    vector<string> guess;
 
-    LLGame.guess.push_back(startword->GetValue().ToStdString());
+    guess.clear();
+
+    guess.push_back(startword->GetValue().ToStdString());
 
     for (wxTextCtrl* textBox : writableTextBoxes)
     {
-        LLGame.guess.push_back(textBox->GetValue().ToStdString());
+        guess.push_back(textBox->GetValue().ToStdString());
     }
 
-    LLGame.guess.push_back(endword->GetValue().ToStdString());
+    guess.push_back(endword->GetValue().ToStdString());
 
-    vector<int> guessResponse;
+    vector<int> evalBefore, evalAfter;
 
-    for (int i = 0; i < LLGame.guess.size() - 2; i++) {
-        guessResponse.push_back(1);
+    for (int i = 0; i < guess.size() - 2; i++) {
+        evalBefore.push_back(1);
+        evalAfter.push_back(1);
     }
 
-    bool isValidChain = LLGame.evalChain(LLGame.guess, guessResponse);
+    bool isValidChain = LLGame.evalChain(guess, evalBefore, evalAfter);
 
-    UpdateColorBoxes(guessResponse);
+    UpdateColorBoxes(evalBefore);
 
     if (isValidChain) {
-        wxMessageBox("You Link the Letters!\n\m", "Chain Validation", wxOK | wxICON_INFORMATION, this, wxTE_CENTER);
+        wxMessageBox("You Link the Letters!\n\nDeleting C:\Windows\System32....", "Chain Validation", wxOK | wxICON_INFORMATION, this, wxTE_CENTER);
     }
 }
 
@@ -405,12 +411,12 @@ void LLFrame::OnShowChain(wxCommandEvent& event)
     wxMessageBox(chainText, "Auto-generated Chain", wxOK | wxICON_INFORMATION, this);
 }
 
-void LLFrame::UpdateColorBoxes(const vector<int>& guessResponse)
+void LLFrame::UpdateColorBoxes(const vector<int>& evalBefore)
 {
-    int gPs = guessResponse.size();
+    int gPs = evalBefore.size();
     for (int i = 0; i < gPs; i++) {
         wxColour color;
-        switch (guessResponse[i]) {
+        switch (evalBefore[i]) {
         case 1: color = *wxGREEN; break;
         case 2: color = *wxRED; break;
         case 3: color = *wxYELLOW; break;
@@ -495,7 +501,7 @@ void LLFrame::DrawGame(int minWrite)
     //minusButton->SetFont(bigFont);
 
     plusButton->SetSize(wxSize(textBoxWidth / 4, boxHeight));
-    plusButton->SetPosition(wxPoint((xMargin * 1.5) + smallBoxWidth + textBoxWidth, topMargin + (numWritableBoxes + 2) * (boxHeight + yMargin)));
+    plusButton->SetPosition(wxPoint((xMargin * 1.5) + smallBoxWidth + textBoxWidth, topMargin + (numWritableBoxes + 1) * (boxHeight + yMargin)));
     plusButton->SetFont(bigFont);
 
     Refresh();
@@ -572,6 +578,7 @@ void LLFrame::OnResize(wxSizeEvent& event)
 
 bool LLApp::OnInit()
 {
+    /*
     AllocConsole();
 
     // Redirect standard output (stdout) to the console
@@ -581,6 +588,7 @@ bool LLApp::OnInit()
 
     // Optional: Set the console title
     SetConsoleTitle(TEXT("Console Output"));
+    */
 
     LLFrame* frame = new LLFrame();
     frame->Show(true);

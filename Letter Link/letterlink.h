@@ -41,10 +41,10 @@ private:
 public:
     LetterLink();  // Constructor that initializes the program
     vector<string> getWordset() const { return wordset; }
-    vector<string> guess;
     vector<string> autochain;
 
-    bool evalChain(vector<string>& guess, vector<int>& guessResponse);
+
+    bool evalChain(vector<string>& guess, vector<int>& evalBefore, vector<int>& evalAfter);
 
     void newChain(){ getChain(wordlist, wordset); }
 
@@ -4456,6 +4456,7 @@ const vector<string> bible = {
     "zones",
     "zooms",
 };
+
 }
 
 #endif // LETTERLINK_H

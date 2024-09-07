@@ -38,8 +38,11 @@ void LetterLink::setDifficulty(int difficulty) {
 }
 
 
-bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
-    bool valid = true, empty = false;
+bool LetterLink::evalChain(vector<string>& guess, vector<int>& evalBefore, vector<int>& evalAfter) {
+    bool valid = true, emptyBefore = false, emptyAfter = false;
+
+    int letterChangeBefore = 0, letterChangeAfter = 0,
+        guessSize = guess.size() - 1, guessSizeFull = guess.size();
 
     // Check if the guess vector is empty or has fewer than two words (invalid input)
     if (guess.size() < 2) {
@@ -47,46 +50,76 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& guessResponse) {
         valid = false;
     }
 
-    for (size_t i = 1; i < guess.size() - 1; ++i) {
+    for (int i = 1; i < guessSize; i++) {
         if (guess[i] == "" || guess[i][0] == ' ') {
             cout << "Empty or invalid word at position " << i << ": \"" << guess[i] << "\"\n";
-            guessResponse[i - 1] = 0;
+            evalBefore[i - 1] = 0;
+            evalAfter[i - 1] = 0;
             valid = false;
-            empty = true;
             continue;
         }
         cout << "Evaluating word: \"" << guess[i] << "\"\n";
 
         // Check that all middle words (excluding the first and last) are in the wordlist
-        if (find(wordlist.begin(), wordlist.end(), guess[i]) == wordlist.end()) {
+        if (guess[i].length() < 5 || find(wordlist.begin(), wordlist.end(), guess[i]) == wordlist.end()) {
             cout << "Word \"" << guess[i] << "\" not found in wordlist\n";
-            guessResponse[i - 1] = 2;
+            evalBefore[i - 1] = 2;
+            evalAfter[i - 1] = 2;
             valid = false;
             continue;
         }
+    }
+    // Check that each word in the guess differs by exactly one letter from the previous word
+    for (int i = 1; i < guessSize; i++) {
+        letterChangeBefore = 0;
+        letterChangeAfter = 0;
+        emptyBefore = false;
+        emptyAfter = false;
 
-        // Check that each word in the guess differs by exactly one letter from the previous word
-        int letterChangeCount = 0;
-        if (empty == false) {
-            for (size_t j = 0; j < guess[i].length(); ++j) {
-                if (guess[i][j] != guess[i - 1][j]) {
-                    letterChangeCount++;
-                }
+        if (evalBefore[i - 1] != 1) {
+            continue;
+        }
+
+        if (i > 1) {
+            if (evalBefore[i - 2] != 1) {
+                evalBefore[i - 1] = 3;
+                goto AFTER;
+            }
+        }
+
+        for (int j = 0; j < guess[i].length(); j++) {
+            if (guess[i][j] != guess[i - 1][j] && i > 0 && guess[i - 1].length() == 5) {
+                letterChangeBefore++;
             }
 
-            if (letterChangeCount != 1) {
-                cout << "Word \"" << guess[i] << "\" changes " << letterChangeCount << " letters from previous word \"" << guess[i - 1] << "\"\n";
-                valid = false;
-                guessResponse[i - 1] = 3;
+        }
+
+        if (letterChangeBefore != 1) {
+            cout << "Word \"" << guess[i] << "\" changes " << letterChangeBefore << " letters from previous word \"" << guess[i - 1] << "\"\n";
+            valid = false;
+            evalBefore[i - 1] = 3;
+        }
+
+        AFTER:
+
+        if (i < guessSize) {
+            if (evalAfter[i] != 1) {
+                evalAfter[i - 1] = 3;
                 continue;
             }
         }
-        else {
-            empty = false;
-            guessResponse[i - 1] = 3;
-            continue;
+
+        for (int j = 0; j < guess[i].length(); j++) {
+            if (guess[i][j] != guess[i + 1][j] && i < guessSize && guess[i + 1].length() == 5) {
+                letterChangeAfter++;
+            }
         }
-        cout << "\tValid word!\n";
+
+        if (letterChangeAfter != 1) {
+            cout << "Word \"" << guess[i] << "\" changes " << letterChangeBefore << " letters from previous word \"" << guess[i - 1] << "\"\n";
+            valid = false;
+            evalAfter[i - 1] = 3;
+        }
     }
 
     cout << "Chain evaluation result: " << (valid ? "Valid" : "Invalid") << "\n";
