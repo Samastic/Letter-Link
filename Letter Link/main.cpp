@@ -25,7 +25,7 @@ private:
     void DrawGame(int minWrite);
     void SetInteractable(bool interactable);
     void OnResize(wxSizeEvent& event);
-    void UpdateColorBoxes(const vector<int>& evalBefore);
+    void UpdateColorBoxes(const vector<int>& evalBefore, const vector<int>& evalAfter);
     void OnAddTextBox(wxCommandEvent& event);
     void OnRemoveTextBox(wxCommandEvent& event);
     void UpdateButtonAccessibility();
@@ -43,7 +43,9 @@ private:
     wxButton* difficultyButton; // Difficulty button
     wxButton* optionsButton; // Additional button 1
     wxButton* quitButton; // Additional button 2
-    vector<wxPanel*> colorBoxes;
+
+    vector<wxPanel*> colorBoxBefore;
+    vector<wxPanel*> colorBoxAfter;
     vector<wxButton*> minusButtons;
 
     int xMargin, yMargin, topMargin;
@@ -80,9 +82,8 @@ enum
     ID_Quit
 };
 
-
 LLFrame::LLFrame()
-    : wxFrame(nullptr, wxID_ANY, "Letter Link", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE & ~wxRESIZE_BORDER),
+    : wxFrame(nullptr, wxID_ANY, "Letter Link", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE & ~(wxRESIZE_BORDER | wxMAXIMIZE_BOX)),
     xMargin(0), yMargin(0), topMargin(0),
       textBoxWidth(0), medBoxWidth(0), smallBoxWidth(0), boxHeight(0),
       gameFontSize(0), bigFontSize(0)
@@ -99,13 +100,16 @@ LLFrame::LLFrame()
 
     SetSize(wxSize(windowWidth, windowHeight));
 
-    // Create UI elements
     startword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(0, 0), wxTE_READONLY | wxTE_CENTER);
     startword->SetMaxLength(5); 
     for (int i = 0; i < MIN_WRITEABLE; ++i) {
-        wxPanel* colorBox = new wxPanel(this, wxID_ANY);
-        colorBox->SetBackgroundColour(*wxWHITE);
-        colorBoxes.push_back(colorBox);
+        wxPanel* beforeBox = new wxPanel(this, wxID_ANY);
+        beforeBox->SetBackgroundColour(*wxWHITE);
+        colorBoxBefore.push_back(beforeBox);
+
+        wxPanel* afterBox = new wxPanel(this, wxID_ANY);
+        afterBox->SetBackgroundColour(*wxWHITE);
+        colorBoxAfter.push_back(afterBox);
 
         wxTextCtrl* textBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(0, 0), wxTE_CENTER);
         textBox->SetMaxLength(5);
@@ -120,7 +124,6 @@ LLFrame::LLFrame()
     endword->SetMaxLength(5);
 
 
-    // New buttons
     newGameButton = new wxButton(this, ID_NewGame, "New Game");
     aboutButton = new wxButton(this, ID_About, "About");
     difficultyButton = new wxButton(this, ID_Difficulty, "Difficulty");
@@ -173,36 +176,96 @@ void LLFrame::OnNewGame(wxCommandEvent& event)
 
 void LLFrame::OnAbout(wxCommandEvent& event)
 {
-    wxString aboutText = wxT(
-        "Letter Link\n\n"
-        "A word-chain forming game!\n\n"
+    wxDialog* AboutDialog = new wxDialog(this, wxID_ANY, "About Letter Link", wxDefaultPosition, wxSize(windowWidth / 1.5, windowHeight / 1.5));
+    wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-        "Description:\n"
-        "Letter Link is a game where you form chains of words by switching a single letter each time.\n"
-        "At the start of each game, you are given two words, and you have to find the accompanying word chain.\n\n"
+    // Define fonts for different sections
+    wxFont headerFont = medFont;
+    wxFont bodyFont = wxFont(wxFontInfo(windowWidth / 64).Family(wxFONTFAMILY_TELETYPE));
+    wxString bulletPoint = wxString::Format("%c", 0x2022);
 
-        "For example, if the starting wordset is (lured, roped), then the chain would look like this:\n"
-        "- lured\n"
-        "- cured\n"
-        "- curer\n"
-        "- corer\n"
-        "- cored\n"
-        "- coped\n"
-        "- roped\n\n"
+    // Title text as header
+    wxStaticText* title = new wxStaticText(AboutDialog, wxID_ANY, wxT("Letter Link"));
+    title->SetFont(bigFont);
+    sizer->Add(title, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
 
-        "The color of the box on the left tell you about the word:\n"
-        "- RED - not a word\n"
-        "- YELLOW - a word, doesn't connect chain\n"
-        "- GREEN - valid chain word\n\n"
+    // Description section in body font
+    wxStaticText* description1 = new wxStaticText(AboutDialog, wxID_ANY,
+        wxT("Letter Link is a game where you form chains of words by switching a single letter each time.\n\nYou are given two words at the start of each game.\n\nYou have to find the word chain between them.\n"));
+    description1->SetFont(bodyFont);
+    sizer->Add(description1, 0, wxLEFT | wxRIGHT | wxTOP, 10);
 
-        "\nThis game is based off the 'word chains' concept as seen in CodeParade's Exploring Word Chain video.\n"
-    );
+    // Example section in smaller font
+    wxStaticText* exampleTitle = new wxStaticText(AboutDialog, wxID_ANY, wxT("Example:\n"));
+    exampleTitle->SetFont(headerFont);
+    sizer->Add(exampleTitle, 0, wxALIGN_LEFT | wxTOP | wxLEFT, 10);
 
-    wxMessageBox(aboutText, "About Letter Link", wxOK | wxICON_INFORMATION);
+    wxStaticText* example = new wxStaticText(AboutDialog, wxID_ANY,
+        wxT("If the starting wordset is (lured, roped), the chain would look like this:\n"
+            + bulletPoint + " l u r e d\n"
+            + bulletPoint + " c u r e d\n"
+            + bulletPoint + " c u r e r\n"
+            + bulletPoint + " c o r e r\n"
+            + bulletPoint + " c o r e d\n"
+            + bulletPoint + " c o p e d\n"
+            + bulletPoint + " r o p e d\n"));
+    example->SetFont(bodyFont);
+    sizer->Add(example, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+
+    // Color information section with wxPanel for colored boxes
+    wxStaticText* colorTitle = new wxStaticText(AboutDialog, wxID_ANY, wxT("The color of the box:"));
+    colorTitle->SetFont(headerFont);
+    sizer->Add(colorTitle, 0, wxTOP | wxLEFT, 10);
+
+    // Create horizontal sizer for each color statement and box
+    wxBoxSizer* redSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxPanel* redPanel = new wxPanel(AboutDialog, wxID_ANY, wxDefaultPosition, wxSize(20, 20));
+    redPanel->SetBackgroundColour(*wxRED);
+    wxStaticText* redText = new wxStaticText(AboutDialog, wxID_ANY, wxT(" - the word is not valid; it was not found in the dictionary."));
+    redText->SetFont(bodyFont);
+    redSizer->Add(redPanel, 0, wxRIGHT, 5);
+    redSizer->Add(redText);
+    sizer->Add(redSizer, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* yellowSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxPanel* yellowPanel = new wxPanel(AboutDialog, wxID_ANY, wxDefaultPosition, wxSize(20, 20));
+    yellowPanel->SetBackgroundColour(*wxYELLOW);
+    wxStaticText* yellowText = new wxStaticText(AboutDialog, wxID_ANY, wxT(" - the word is valid, but doesn't connect the chain."));
+    yellowText->SetFont(bodyFont);
+    yellowSizer->Add(yellowPanel, 0, wxRIGHT, 5);
+    yellowSizer->Add(yellowText);
+    sizer->Add(yellowSizer, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* greenSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxPanel* greenPanel = new wxPanel(AboutDialog, wxID_ANY, wxDefaultPosition, wxSize(20, 20));
+    greenPanel->SetBackgroundColour(*wxGREEN);
+    wxStaticText* greenText = new wxStaticText(AboutDialog, wxID_ANY, wxT(" - the word is valid and connects the chain."));
+    greenText->SetFont(bodyFont);
+    greenSizer->Add(greenPanel, 0, wxRIGHT, 5);
+    greenSizer->Add(greenText);
+    sizer->Add(greenSizer, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+
+    // Attribution section in smaller font
+    wxStaticText* attributionTitle = new wxStaticText(AboutDialog, wxID_ANY, wxT("Attribution:"));
+    attributionTitle->SetFont(headerFont);
+    sizer->Add(attributionTitle, 0, wxTOP | wxLEFT, 10);
+
+    wxStaticText* attributionText = new wxStaticText(AboutDialog, wxID_ANY,
+        wxT("This game is based off the 'word chains' concept as seen in CodeParade's video \"Exploring Word Chains\".\n"));
+    attributionText->SetFont(bodyFont);
+    sizer->Add(attributionText, 0, wxLEFT | wxRIGHT | wxTOP, 10);
+
+
+    // Final section with an OK button
+    wxButton* okButton = new wxButton(AboutDialog, wxID_OK, wxT("OK"));
+    sizer->Add(okButton, 0, wxALIGN_CENTER | wxALL, 10);
+
+    // Set the sizer and display the dialog
+    AboutDialog->SetSizer(sizer);
+    AboutDialog->ShowModal();
+    AboutDialog->Destroy();
 }
 
-
-// Inside the OnDifficulty function
 void LLFrame::OnDifficulty(wxCommandEvent& event)
 {
     wxDialog* difficultyDialog = new wxDialog(this, wxID_ANY, "Select Difficulty", wxDefaultPosition, wxSize(windowWidth / 2.25, windowHeight / 2.5));
@@ -243,7 +306,6 @@ void LLFrame::OnDifficulty(wxCommandEvent& event)
     difficultyDialog->Destroy();
 }
 
-
 void LLFrame::OnOptions(wxCommandEvent& event)
 {
     wxDialog* optionsDialog = new wxDialog(this, wxID_ANY, "Options", wxDefaultPosition, wxSize(windowWidth / 4, windowHeight/4));
@@ -270,7 +332,6 @@ void LLFrame::OnOptions(wxCommandEvent& event)
     optionsDialog->ShowModal();
 }
 
-
 void LLFrame::SetInteractable(bool interactable)
 {
     for (wxTextCtrl* textBox : writableTextBoxes)
@@ -290,7 +351,7 @@ void LLFrame::SetInteractable(bool interactable)
 void LLFrame::OnAddTextBox(wxCommandEvent& event)
 {
     vector<string> reguess;
-    int insertPos;
+    int insertPos = 0;
 
     if (writableTextBoxes.size() >= MAX_WRITEABLE || writableTextBoxes.size() >= SOFT_MAX_WRITEABLE) {
         return;
@@ -306,9 +367,13 @@ void LLFrame::OnAddTextBox(wxCommandEvent& event)
     newTextBox->SetMaxLength(5);
     writableTextBoxes.push_back(newTextBox);
 
-    wxPanel* newColorBox = new wxPanel(this, wxID_ANY);
-    newColorBox->SetBackgroundColour(*wxWHITE);
-    colorBoxes.push_back(newColorBox);
+    wxPanel* newColorBoxBefore = new wxPanel(this, wxID_ANY);
+    newColorBoxBefore->SetBackgroundColour(*wxWHITE);
+    colorBoxBefore.push_back(newColorBoxBefore);
+
+    wxPanel* newColorBoxAfter = new wxPanel(this, wxID_ANY);
+    newColorBoxAfter->SetBackgroundColour(*wxWHITE);
+    colorBoxAfter.push_back(newColorBoxAfter);
 
     wxButton* newMinusButton = new wxButton(this, wxID_ANY, "-", wxPoint(0,0), wxSize(0,0));
     Bind(wxEVT_BUTTON, &LLFrame::OnRemoveTextBox, this, newMinusButton->GetId());
@@ -330,17 +395,17 @@ void LLFrame::OnRemoveTextBox(wxCommandEvent& event) {
         int index = std::distance(minusButtons.begin(), it);  // Get the index of the button
 
         // Remove the corresponding text box, color box, and minus button
-        wxTextCtrl* textBox = writableTextBoxes[index];
+        writableTextBoxes[index]->Destroy();
         writableTextBoxes.erase(writableTextBoxes.begin() + index);
-        textBox->Destroy();
 
-        wxPanel* colorBox = colorBoxes[index];
-        colorBoxes.erase(colorBoxes.begin() + index);
-        colorBox->Destroy();
+        colorBoxBefore[index]->Destroy();
+        colorBoxBefore.erase(colorBoxBefore.begin() + index);
 
-        wxButton* minusButton = minusButtons[index];
+        colorBoxAfter[index]->Destroy();
+        colorBoxAfter.erase(colorBoxAfter.begin() + index);
+
+        minusButtons[index]->Destroy();
         minusButtons.erase(minusButtons.begin() + index);
-        minusButton->Destroy();
 
         // Redraw the game to reflect the updated layout
         DrawGame();
@@ -393,10 +458,10 @@ void LLFrame::OnSubmit(wxCommandEvent& event)
 
     bool isValidChain = LLGame.evalChain(guess, evalBefore, evalAfter);
 
-    UpdateColorBoxes(evalBefore);
+    UpdateColorBoxes(evalBefore, evalAfter);
 
     if (isValidChain) {
-        wxMessageBox("You Link the Letters!\n\nDeleting C:\Windows\System32....", "Chain Validation", wxOK | wxICON_INFORMATION, this, wxTE_CENTER);
+        wxMessageBox("You Link the Letters!\n\nAmazing!", "Chain Validation", wxOK | wxICON_INFORMATION, this, wxTE_CENTER);
     }
 }
 
@@ -411,47 +476,64 @@ void LLFrame::OnShowChain(wxCommandEvent& event)
     wxMessageBox(chainText, "Auto-generated Chain", wxOK | wxICON_INFORMATION, this);
 }
 
-void LLFrame::UpdateColorBoxes(const vector<int>& evalBefore)
-{
+void LLFrame::UpdateColorBoxes(const vector<int>& evalBefore, const vector<int>& evalAfter) {
     int gPs = evalBefore.size();
+    wxColour topColor, bottomColor;
+
     for (int i = 0; i < gPs; i++) {
-        wxColour color;
+        // Set color for evalBefore (top half)
         switch (evalBefore[i]) {
-        case 1: color = *wxGREEN; break;
-        case 2: color = *wxRED; break;
-        case 3: color = *wxYELLOW; break;
-        default: color = *wxWHITE; break;
+        case 1: topColor = *wxGREEN; break;
+        case 2: topColor = *wxRED; break;
+        case 3: topColor = *wxYELLOW; break;
+        default: topColor = *wxWHITE; break;
         }
-        colorBoxes[i]->SetBackgroundColour(color);
-        colorBoxes[i]->Refresh();
+
+        // Set color for evalAfter (bottom half)
+        switch (evalAfter[i]) {
+        case 1: bottomColor = *wxGREEN; break;
+        case 2: bottomColor = *wxRED; break;
+        case 3: bottomColor = *wxYELLOW; break;
+        default: bottomColor = *wxWHITE; break;
+        }
+
+        // Update color for before and after boxes
+        colorBoxBefore[i]->SetBackgroundColour(topColor);
+        colorBoxBefore[i]->Refresh();
+        colorBoxAfter[i]->SetBackgroundColour(bottomColor);
+        colorBoxAfter[i]->Refresh();
     }
 }
 
-void LLFrame::ResetButtons(int minWrite, int& numWritableBoxes)
-{
-    for (int i = 0; i < numWritableBoxes;i++) {
-        wxTextCtrl* lastTextBox = writableTextBoxes.back();
+void LLFrame::ResetButtons(int minWrite, int& numWritableBoxes) {
+    // Remove all existing boxes and buttons
+    for (int i = 0; i < numWritableBoxes; i++) {
+        writableTextBoxes.back()->Destroy();
         writableTextBoxes.pop_back();
-        lastTextBox->Destroy();
 
-        wxPanel* lastColorBox = colorBoxes.back();
-        colorBoxes.pop_back();
-        lastColorBox->Destroy();
+        colorBoxBefore.back()->Destroy();
+        colorBoxBefore.pop_back();
 
-        wxButton* lastButton = minusButtons.back();
+        colorBoxAfter.back()->Destroy();
+        colorBoxAfter.pop_back();
+
+        minusButtons.back()->Destroy();
         minusButtons.pop_back();
-        lastButton->Destroy();
     }
 
-
+    // Add the minimum required boxes and buttons
     for (int i = 0; i < minWrite; i++) {
         wxTextCtrl* newTextBox = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(0, 0), wxTE_CENTER);
         newTextBox->SetMaxLength(5);
         writableTextBoxes.push_back(newTextBox);
 
-        wxPanel* newColorBox = new wxPanel(this, wxID_ANY);
-        newColorBox->SetBackgroundColour(*wxWHITE);
-        colorBoxes.push_back(newColorBox);
+        wxPanel* newColorBoxBefore = new wxPanel(this, wxID_ANY);
+        newColorBoxBefore->SetBackgroundColour(*wxWHITE);
+        colorBoxBefore.push_back(newColorBoxBefore);
+
+        wxPanel* newColorBoxAfter = new wxPanel(this, wxID_ANY);
+        newColorBoxAfter->SetBackgroundColour(*wxWHITE);
+        colorBoxAfter.push_back(newColorBoxAfter);
 
         wxButton* newMinusButton = new wxButton(this, wxID_ANY, "-", wxPoint(0, 0), wxSize(0, 0));
         Bind(wxEVT_BUTTON, &LLFrame::OnRemoveTextBox, this, newMinusButton->GetId());
@@ -460,7 +542,6 @@ void LLFrame::ResetButtons(int minWrite, int& numWritableBoxes)
 
     numWritableBoxes = minWrite;
 }
-
 
 void LLFrame::DrawGame()
 {
@@ -484,8 +565,13 @@ void LLFrame::DrawGame(int minWrite)
 
     for (int i = 0; i < numWritableBoxes; ++i)
     {
-        colorBoxes[i]->SetSize(wxSize(smallBoxWidth, boxHeight));
-        colorBoxes[i]->SetPosition(wxPoint(xMargin / 2, topMargin + (i + 1) * (boxHeight + yMargin)));
+        // Set sizes and positions for colorBoxBefore
+        colorBoxBefore[i]->SetSize(wxSize(smallBoxWidth, boxHeight / 2));  // Adjust the height as needed
+        colorBoxBefore[i]->SetPosition(wxPoint(xMargin / 2, topMargin + (i + 1) * (boxHeight + yMargin)));
+
+        // Set sizes and positions for colorBoxAfter
+        colorBoxAfter[i]->SetSize(wxSize(smallBoxWidth, boxHeight / 2));  // Adjust the height as needed
+        colorBoxAfter[i]->SetPosition(wxPoint(xMargin / 2, topMargin + (i + 1) * (boxHeight + yMargin) + (boxHeight / 2)));
 
         writableTextBoxes[i]->SetSize(wxSize(textBoxWidth, boxHeight));
         writableTextBoxes[i]->SetPosition(wxPoint(xMargin + smallBoxWidth, topMargin + (i + 1) * (boxHeight + yMargin)));
@@ -518,7 +604,7 @@ void LLFrame::UpdateLayout()
     smallBoxWidth = textBoxWidth / 4;
     boxHeight = windowHeight / 14;
     gameFontSize = boxHeight / 1.75;
-    bigFontSize = boxHeight / 2.5;
+    bigFontSize = boxHeight / 3;
     medFontSize = boxHeight / 4;
 
     gameFont.SetPointSize(gameFontSize);
@@ -527,12 +613,12 @@ void LLFrame::UpdateLayout()
     gameFont.SetWeight(wxFONTWEIGHT_BOLD);
 
     bigFont.SetPointSize(bigFontSize);
-    bigFont.SetFamily(wxFONTFAMILY_DEFAULT);
+    bigFont.SetFamily(wxFONTFAMILY_TELETYPE);
     bigFont.SetStyle(wxFONTSTYLE_NORMAL);
     bigFont.SetWeight(wxFONTWEIGHT_NORMAL);
 
     medFont.SetPointSize(medFontSize);
-    medFont.SetFamily(wxFONTFAMILY_DEFAULT);
+    medFont.SetFamily(wxFONTFAMILY_TELETYPE);
     medFont.SetStyle(wxFONTSTYLE_NORMAL);
     medFont.SetWeight(wxFONTWEIGHT_NORMAL);
 

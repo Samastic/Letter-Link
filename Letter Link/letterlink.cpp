@@ -37,7 +37,6 @@ void LetterLink::setDifficulty(int difficulty) {
     }
 }
 
-
 bool LetterLink::evalChain(vector<string>& guess, vector<int>& evalBefore, vector<int>& evalAfter) {
     bool valid = true, emptyBefore = false, emptyAfter = false;
 
@@ -102,7 +101,7 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& evalBefore, vecto
 
         AFTER:
 
-        if (i < guessSize) {
+        if (i < guessSize - 1) {
             if (evalAfter[i] != 1) {
                 evalAfter[i - 1] = 3;
                 continue;
@@ -125,8 +124,6 @@ bool LetterLink::evalChain(vector<string>& guess, vector<int>& evalBefore, vecto
     cout << "Chain evaluation result: " << (valid ? "Valid" : "Invalid") << "\n";
     return valid;
 }
-
-
 
 void LetterLink::showLinks(vector<string> links) {
     for (int i = 0; i < links.size(); i++) {
