@@ -1,7 +1,6 @@
 #ifndef LETTERLINK_H
 #define LETTERLINK_H
 
-
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -17,10 +16,12 @@ using namespace std;
 
 class LetterLink {
 private:
-    int MIN_WRITEABLE = 4; //minimum writeable spaces
-    int MAX_CHAIN_SIZE = 6; //maximum total chain size
-    int MAX_MIRROR_SIZE = 3; //maximum amount of letters that are identical (same char + position) in the wordset 
-    int NOT_SAME_CHANGE = 2; //maximum attempts made by chain finder to find a word that doesn't change a letter of the same position
+    int MIN_WRITEABLE = 4;      //minimum writeable spaces
+    int MAX_CHAIN_SIZE = 6;     //maximum total chain size
+    int MAX_MIRROR_SIZE = 3;    //maximum amount of letters that are identical (same char + position) in the wordset 
+    int NOT_SAME_CHANGE = 2;    //maximum attempts made by chain finder to find a word that doesn't change a letter of the same position
+    int MAX_LIVES = 3;          //maximum number of guesses
+
     //should only ever be changed by setDifficulty()
 
     vector<string> wordlist; //total set of possible words
@@ -1018,7 +1019,6 @@ const vector<string> bible = {
     "desks",
     "deter",
     "deuce",
-    "dhows",
     "dials",
     "diary",
     "diced",
@@ -4175,7 +4175,6 @@ const vector<string> bible = {
     "verge",
     "verse",
     "verso",
-    "verve",
     "vests",
     "vetch",
     "vexed",

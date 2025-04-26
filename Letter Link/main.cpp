@@ -31,6 +31,7 @@ private:
     void UpdateButtonAccessibility();
     void ResetButtons(int minWrite, int& numWritableBoxes);
     void UpdateLayout();
+    void UpdateLayout(float W, float H);
     void OnDifficulty(wxCommandEvent& event);
 
    
@@ -51,6 +52,7 @@ private:
     int xMargin, yMargin, topMargin;
     const int MAX_WRITEABLE = 10;
     int SOFT_MAX_WRITEABLE = 6, MIN_WRITEABLE = 4;
+    wxSize screenSize;
     int textBoxWidth, medBoxWidth, smallBoxWidth, boxHeight;
     int gameFontSize, bigFontSize, medFontSize;
     wxFont gameFont;
@@ -89,16 +91,7 @@ LLFrame::LLFrame()
       gameFontSize(0), bigFontSize(0)
 {
 
-    Maximize(true);
-
-    GetClientSize(&windowWidth, &windowHeight);
-
-    windowWidth /= 2.5;
-    windowHeight += (windowHeight / 32);
-
-    Maximize(false);
-
-    SetSize(wxSize(windowWidth, windowHeight));
+    screenSize = wxGetDisplaySize();
 
     startword = new wxTextCtrl(this, wxID_ANY, "", wxPoint(0, 0), wxSize(0, 0), wxTE_READONLY | wxTE_CENTER);
     startword->SetMaxLength(5); 
@@ -149,8 +142,9 @@ LLFrame::LLFrame()
 
     LLGame.setDifficulty(1);
 
-    UpdateLayout();
+    
     DrawGame();
+    UpdateLayout();
 }
 
 void LLFrame::OnNewGame()
@@ -176,7 +170,7 @@ void LLFrame::OnNewGame(wxCommandEvent& event)
 
 void LLFrame::OnAbout(wxCommandEvent& event)
 {
-    wxDialog* AboutDialog = new wxDialog(this, wxID_ANY, "About Letter Link", wxDefaultPosition, wxSize(windowWidth / 1.5, windowHeight / 1.5));
+    wxDialog* AboutDialog = new wxDialog(this, wxID_ANY, "About Letter Link", wxDefaultPosition, wxSize(windowWidth, windowHeight*0.8));
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
     // Define fonts for different sections
@@ -268,7 +262,9 @@ void LLFrame::OnAbout(wxCommandEvent& event)
 
 void LLFrame::OnDifficulty(wxCommandEvent& event)
 {
-    wxDialog* difficultyDialog = new wxDialog(this, wxID_ANY, "Select Difficulty", wxDefaultPosition, wxSize(windowWidth / 2.25, windowHeight / 2.5));
+    int margin = 0;
+
+    wxDialog* difficultyDialog = new wxDialog(this, wxID_ANY, "Select Difficulty", wxDefaultPosition, wxSize(windowWidth / 2.25, boxHeight*5));
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
 
@@ -287,12 +283,14 @@ void LLFrame::OnDifficulty(wxCommandEvent& event)
     wxButton* backButton = new wxButton(difficultyDialog, wxID_ANY, "Back");
     backButton->Bind(wxEVT_BUTTON, [difficultyDialog](wxCommandEvent&) { difficultyDialog->Destroy(); });
 
+    margin = boxHeight / 7;
+
     // Add buttons to the sizer
-    sizer->Add(difficulty0Button, 0, wxALL | wxLEFT, 10);
-    sizer->Add(difficulty1Button, 0, wxALL | wxLEFT, 10);
-    sizer->Add(difficulty2Button, 0, wxALL | wxLEFT, 10);
-    sizer->Add(difficulty3Button, 0, wxALL | wxLEFT, 10);
-    sizer->Add(backButton, 0, wxALL | wxLEFT, 10);
+    sizer->Add(difficulty0Button, 0, wxALL | wxLEFT, margin);
+    sizer->Add(difficulty1Button, 0, wxALL | wxLEFT, margin);
+    sizer->Add(difficulty2Button, 0, wxALL | wxLEFT, margin);
+    sizer->Add(difficulty3Button, 0, wxALL | wxLEFT, margin);
+    sizer->Add(backButton, 0, wxALL | wxLEFT, margin);
 
     difficulty0Button->SetFont(bigFont);
     difficulty1Button->SetFont(bigFont);
@@ -308,22 +306,41 @@ void LLFrame::OnDifficulty(wxCommandEvent& event)
 
 void LLFrame::OnOptions(wxCommandEvent& event)
 {
-    wxDialog* optionsDialog = new wxDialog(this, wxID_ANY, "Options", wxDefaultPosition, wxSize(windowWidth / 4, windowHeight/4));
+    int margin = 0;
+    float sW = 3.5, sH = 1.4,
+            mW = 3, mH = 1.2,
+            bW = 2.5, bH = 1;
+    wxDialog* optionsDialog = new wxDialog(this, wxID_ANY, "Options", wxDefaultPosition, wxSize(windowWidth / 3, boxHeight*4));
 
     // Create sizer for vertical layout
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
+    margin = boxHeight / 10;
+
+    // Small Window Button
+    wxButton* smallWindow = new wxButton(optionsDialog, wxID_ANY, "Small Window");
+    smallWindow->Bind(wxEVT_BUTTON, [this, sH, sW](wxCommandEvent&) {this->UpdateLayout(sW, sH);});
+    sizer->Add(smallWindow, 0, wxALL | wxCENTER, margin);
+
+    // Medium Window Button
+    wxButton* mediumWindow = new wxButton(optionsDialog, wxID_ANY, "Medium Window");
+    mediumWindow->Bind(wxEVT_BUTTON, [this, mH, mW](wxCommandEvent&) {this->UpdateLayout(mW, mH);});
+    sizer->Add(mediumWindow, 0, wxALL | wxCENTER, margin);
+
+    // Big Window Button
+    wxButton* bigWindow = new wxButton(optionsDialog, wxID_ANY, "Large Window");
+    bigWindow->Bind(wxEVT_BUTTON, [this, bH, bW](wxCommandEvent&) {this->UpdateLayout(bW, bH); });
+    sizer->Add(bigWindow, 0, wxALL | wxCENTER, margin);
+
     // Create the "cheat" button
-    wxButton* cheatButton = new wxButton(optionsDialog, wxID_ANY, "cheat");
+    wxButton* cheatButton = new wxButton(optionsDialog, wxID_ANY, "Cheat (Instant Loss!)");
     cheatButton->Bind(wxEVT_BUTTON, &LLFrame::OnShowChain, this);
-    sizer->Add(cheatButton, 0, wxALL | wxCENTER, 10);
+    sizer->Add(cheatButton, 0, wxALL | wxCENTER, margin);
 
     // Create the "Back" button
     wxButton* backButton = new wxButton(optionsDialog, wxID_ANY, "Back");
-    backButton->Bind(wxEVT_BUTTON, [optionsDialog](wxCommandEvent&) {
-        optionsDialog->Destroy();
-        });
-    sizer->Add(backButton, 0, wxALL | wxCENTER, 10);
+    backButton->Bind(wxEVT_BUTTON, [optionsDialog](wxCommandEvent&) {optionsDialog->Destroy();});
+    sizer->Add(backButton, 0, wxALL | wxCENTER, margin);
 
     // Set the sizer for the dialog
     optionsDialog->SetSizer(sizer);
@@ -474,6 +491,8 @@ void LLFrame::OnShowChain(wxCommandEvent& event)
     }
 
     wxMessageBox(chainText, "Auto-generated Chain", wxOK | wxICON_INFORMATION, this);
+
+    LLFrame::OnNewGame();
 }
 
 void LLFrame::UpdateColorBoxes(const vector<int>& evalBefore, const vector<int>& evalAfter) {
@@ -593,8 +612,33 @@ void LLFrame::DrawGame(int minWrite)
     Refresh();
 }
 
-void LLFrame::UpdateLayout()
+void LLFrame::UpdateLayout() {
+    float W = 2.5, H = 1;
+    UpdateLayout(W, H);
+}
+
+void LLFrame::UpdateLayout(float W, float H)
 { 
+    xMargin = 0;
+    yMargin = 0;
+    topMargin = 0;
+
+    textBoxWidth = 0;
+    medBoxWidth = 0;
+    smallBoxWidth = 0;
+    boxHeight = 0;
+    gameFontSize = 0;
+    bigFontSize = 0;
+    medFontSize = 0;
+
+    windowWidth = screenSize.GetWidth();
+    windowHeight = screenSize.GetHeight();
+
+    windowWidth /= W;
+    windowHeight /= H;
+
+    SetSize(wxSize(windowWidth, windowHeight));
+
     xMargin = windowWidth / 16;
     yMargin = windowHeight / 128;
     topMargin = windowHeight / 64;
@@ -606,6 +650,8 @@ void LLFrame::UpdateLayout()
     gameFontSize = boxHeight / 1.75;
     bigFontSize = boxHeight / 3;
     medFontSize = boxHeight / 4;
+
+    Refresh();
 
     gameFont.SetPointSize(gameFontSize);
     gameFont.SetFamily(wxFONTFAMILY_TELETYPE);
@@ -647,6 +693,8 @@ void LLFrame::UpdateLayout()
     quitButton->SetSize(wxSize(medBoxWidth/1.5, boxHeight/1.5));
     quitButton->SetPosition(wxPoint(windowWidth - (smallBoxWidth*2) - xMargin / 2, windowHeight - (windowHeight/8)));
     quitButton->SetFont(medFont);
+
+    LLFrame::DrawGame();
 
     Refresh();
 }
